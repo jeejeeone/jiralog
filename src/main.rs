@@ -1,4 +1,5 @@
 mod worklog;
+use chrono::{DateTime, Utc};
 use csvlens::run_csvlens;
 use std::error::Error;
 use inline_colorization::*;
@@ -19,6 +20,8 @@ enum Commands {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
+        /// Time spent in Jira format, for example 1d5h
+        started_date: DateTime<Utc>,
         /// Add description for work
         #[arg(short, long)]
         description: Option<String>,
@@ -28,27 +31,34 @@ enum Commands {
         /// Item to remove
         item_index: u64,
     },
+    /// Remove latest work item
     Pop {},
-    Ongoing {},
-    /// Show worklog
-    Show {},
-    /// Begin working on an item, records time automatically
+    /// Begin ongoing work item, records time automatically. Ends previous ongoing work.
     Begin {
         ticket: String,
         /// Add description for work
         #[arg(short, long)]
         description: Option<String>,
     },
-    /// End current work
+    /// End ongoing work
     End {
 
     },
-    /// Record worklog to Jira, remove successfully recorded items
+    /// Print current ongoing work item
+    Ongoing {},
+    /// Record worklog to Jira, removes successfully recorded items
     Commit {},
-    /// Remove committed entries from jiralog
+    /// Remove committed entries
     Purge {},
-    /// Configure worklog
+    /// Show worklog using terminal ui
+    Show {
+        /// Output worklog to stdout
+        #[arg(short, long)]
+        stdout: bool
+    },
+    /// Configure jiralog
     Configure {},
+    /// Print info
     Info {},
 }
 
@@ -56,11 +66,12 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Add { ticket, time_spent, description }) => {
+        Some(Commands::Add { ticket, time_spent, description , started_date}) => {
             run(|| worklog::add(
                 ticket.to_string(), 
                 time_spent.to_string(), 
-                description.as_deref().unwrap_or("").to_string()
+                description.as_deref().unwrap_or("").to_string(),
+                started_date.clone()
             ));
         }
         Some(Commands::Rm { item_index }) => {
@@ -70,15 +81,19 @@ fn main() {
             run(|| worklog::pop());
         }
         Some(Commands::Commit {}) => {
-            println!("COMMIT");
+            run(|| worklog::commit())
         }
         Some(Commands::Ongoing {}) => {
             run(|| worklog::print_ongoing_ticket());
         }
-        Some(Commands::Show {}) => {
-            match run_csvlens(&[&worklog::worklog_path(), "--delimiter", ","]) {
-                Ok(_) => {},
-                Err(e) => eprintln!("Error: {:?}", e),
+        Some(Commands::Show { stdout }) => {
+            if *stdout {
+                run(|| worklog::worklog_to_stdout());
+            } else {
+                match run_csvlens(&[&worklog::worklog_path(), "--delimiter", ","]) {
+                    Ok(_) => {},
+                    Err(e) => eprintln!("Error: {:?}", e),
+                }
             }
         }
         Some(Commands::Begin { ticket, description }) => {

@@ -1,0 +1,36 @@
+services:
+  jira:
+    image: atlassian/jira-software:latest
+    container_name: jira
+    environment:
+      - ATL_JDBC_URL=jdbc:postgresql://db:5432/jiradb
+      - ATL_JDBC_USER=jiradbuser
+      - ATL_JDBC_PASSWORD=jiradbpwd
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    networks:
+      - jiranet
+    volumes:
+      - jira_jira_data:/var/atlassian/application-data/jira
+
+  db:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_DB: jiradb  # Database name
+      POSTGRES_USER: jiradbuser  # PostgreSQL username
+      POSTGRES_PASSWORD: jiradbpwd  # PostgreSQL password
+    volumes:
+      - jira_postgres_data:/var/lib/postgresql/data
+    networks:
+      - jiranet
+
+networks:
+  jiranet:
+    driver: bridge
+
+volumes:
+  jira_postgres_data:
+  jira_jira_data:

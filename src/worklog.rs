@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
+use reqwest::Client;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
-use chrono::serde::ts_seconds;
-use std::io::{stdout, Seek, Write};
+use std::io::{stdout, BufRead, Seek, Write};
 use regex::Regex;
 use std::io::stdin;
 use std::path::PathBuf;
@@ -13,13 +13,15 @@ use std::io::BufWriter;
 use java_properties::read;
 use std::io::BufReader;
 use inline_colorization::*;
+use http::StatusCode;
+
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct WorklogRecord {
     ticket: String,
     time_spent: String,
     description: String,
-    timestamp: DateTime<Utc>,
+    started_date: DateTime<Utc>,
     committed: bool
 }
 
@@ -27,20 +29,20 @@ struct Configuration {
     token: String
 }
 
-static WORKLOG_FILE: &str = "data.csv";
+static WORKLOG_FILE: &str = "worklog.csv";
 
 pub fn worklog_path() -> String {
-    WORKLOG_FILE.to_string()
+    get_csv_path().to_str().expect("No csv path").to_string()
 }
 
-pub fn add(ticket: String, time_spent: String, description: String)  -> Result<String, Box<dyn Error>>  {
+pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<Utc>)  -> Result<String, Box<dyn Error>>  {
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .append(true)
-        .open(WORKLOG_FILE)
+        .open(get_csv_path())
         .unwrap();
 
     let needs_headers = file.seek(std::io::SeekFrom::End(0))? == 0;
@@ -52,7 +54,7 @@ pub fn add(ticket: String, time_spent: String, description: String)  -> Result<S
         ticket: ticket.clone(),
         time_spent: time_spent.clone(),
         description: description.clone(),
-        timestamp: Utc::now(),
+        started_date: started_date,
         committed: false,
     };
 
@@ -109,7 +111,7 @@ pub fn pop() -> Result<String, Box<dyn Error>> {
 pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Error>> {
     let ongoing_ticket = ongoing_ticket()?;
     end()?;
-    add(ticket.clone(), "ongoing".to_string(), description.clone())?;
+    add(ticket.clone(), "ongoing".to_string(), description.clone(), Utc::now())?;
 
     if let Some(value) = ongoing_ticket {
         Ok(format!("Begin [{}], end [{}] with duration={}", ticket, value.ticket, get_ongoing_duration(&value)))
@@ -120,7 +122,21 @@ pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Erro
 
 pub fn print_ongoing_ticket()  -> Result<String, Box<dyn Error>> {
     if let Some(value) = ongoing_ticket()? {
-        println!("{}", format!("[{}]: duration={}", value.ticket, get_ongoing_duration(&value)));
+        Ok(format!("{}", format!("[{}]: duration={}", value.ticket, get_ongoing_duration(&value))))
+    } else {
+        Ok("No ongoing ticket".to_string())    
+    }
+}
+
+pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
+    let file = File::open(&get_csv_path())?;
+    let reader = BufReader::new(file);
+
+    for (index, line) in reader.lines().enumerate() {
+        match line {
+            Ok(content) => println!("{}: {}", index, content),
+            Err(e) => eprintln!("Error reading line"),
+        }
     }
 
     Ok("".to_string())
@@ -128,7 +144,7 @@ pub fn print_ongoing_ticket()  -> Result<String, Box<dyn Error>> {
 
 fn get_ongoing_duration(record: &WorklogRecord) -> String {
     let now = Utc::now();
-    let delta = now.signed_duration_since(record.timestamp);
+    let delta = now.signed_duration_since(record.started_date);
     let delta_minutes = delta.num_minutes();
 
     format!("{}m", delta_minutes)
@@ -160,14 +176,17 @@ pub fn end() -> Result<String, Box<dyn Error>> {
 }
 
 fn read_worklog() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
-    let file = File::open(WORKLOG_FILE)?;
-    let mut rdr = csv::Reader::from_reader(file);
+    if let Ok(file) = File::open(worklog_path()) {
+        let mut rdr = csv::Reader::from_reader(file);
 
-    let worklog_records: Vec<WorklogRecord> = rdr
-        .deserialize()
-        .collect::<Result<_, _>>()?;
-    
-    Ok(worklog_records)
+        let worklog_records: Vec<WorklogRecord> = rdr
+            .deserialize()
+            .collect::<Result<_, _>>()?;
+        
+        Ok(worklog_records)
+    } else {
+        Ok(Vec::new())
+    }
 }
 
 fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
@@ -175,7 +194,7 @@ fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(WORKLOG_FILE)?;
+        .open(get_csv_path())?;
 
     let mut writer = csv::WriterBuilder::new().from_writer(file);
 
@@ -247,6 +266,13 @@ fn get_config_path() -> PathBuf {
     config_path
 }
 
+fn get_csv_path() -> PathBuf {
+    let mut config_dir = get_config_dir_path();
+    config_dir.push(WORKLOG_FILE);
+    
+    config_dir
+}
+
 fn read_config() -> Result<Configuration, Box<dyn Error>> {
     let mut config = File::open(get_config_path())?;
     let config_map = read(BufReader::new(config))?;
@@ -254,6 +280,16 @@ fn read_config() -> Result<Configuration, Box<dyn Error>> {
     let token = config_map.get("token").expect("No token found");
 
     Ok(Configuration { token: token.to_string() })
+}
+
+pub fn commit() -> Result<String, Box<dyn Error>> {
+    let worklog = read_worklog()?;
+
+    for item in worklog {
+        update_time_spent("http://localhost:8080", "jarijoki1@gmail.com", "token", item)?;
+    }
+
+    Ok("a".to_string())
 }
 
 pub fn print_info() -> Result<String, Box<dyn Error>> {
@@ -269,13 +305,55 @@ pub fn print_info() -> Result<String, Box<dyn Error>> {
     ";
 
     println!("{color_bright_magenta}{}", header);
+    
+    println!("Jiralog home: 
+    {}", get_config_dir_path().display());
+    println!("");
+
     println!("Configuration: 
     {}", get_config_path().display());
+    println!("");
+    
+    println!("Worklog: 
+    {}", get_csv_path().display());
 
     println!("");
+
     println!("Total items {}, uncommitted items {}", items.len(), 0);
 
     println!("{color_reset}");
+
+    Ok("".to_string())
+}
+
+pub fn update_time_spent(
+    jira_url: &str,
+    username: &str,
+    api_token: &str,
+    worklog: WorklogRecord,
+) -> Result<String, Box<dyn Error>> {
+    let client = reqwest::blocking::Client::new();
+    let url = format!("{}/rest/api/3/issue/{}/worklog", jira_url, worklog.ticket);
+
+    let payload = serde_json::json!({
+        "timeSpent": worklog.time_spent,
+        "started": worklog.started_date.to_rfc3339(),
+        "comment": worklog.description,
+    });
+
+
+    let request = client
+        .post(&url)
+        .bearer_auth("token".to_string())
+        .json(&payload);
+
+
+    let response = request.send();
+
+    match response {
+        Ok(resp) => println!("Request succeeded with status: {}", resp.status()),
+        Err(err) => println!("Request failed with error: {}", err),
+    }
 
     Ok("".to_string())
 }
