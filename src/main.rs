@@ -33,19 +33,17 @@ enum Commands {
     },
     /// Remove latest work item
     Pop {},
-    /// Begin ongoing work item, records time automatically. Ends previous ongoing work.
+    /// Begin work item, ends previous work, records time automatically
     Begin {
         ticket: String,
         /// Add description for work
         #[arg(short, long)]
         description: Option<String>,
     },
-    /// End ongoing work
-    End {
-
-    },
-    /// Print current ongoing work item
-    Ongoing {},
+    /// End current work
+    End { },
+    /// Print current work item
+    Current {},
     /// Record worklog to Jira, removes successfully recorded items
     Commit {},
     /// Remove committed entries
@@ -83,8 +81,8 @@ fn main() {
         Some(Commands::Commit {}) => {
             run(|| worklog::commit())
         }
-        Some(Commands::Ongoing {}) => {
-            run(|| worklog::print_ongoing_ticket());
+        Some(Commands::Current {}) => {
+            run(|| worklog::print_current_ticket());
         }
         Some(Commands::Show { stdout }) => {
             if *stdout {

@@ -109,22 +109,22 @@ pub fn pop() -> Result<String, Box<dyn Error>> {
 }
 
 pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Error>> {
-    let ongoing_ticket = ongoing_ticket()?;
+    let current_ticket = current_ticket()?;
     end()?;
-    add(ticket.clone(), "ongoing".to_string(), description.clone(), Utc::now())?;
+    add(ticket.clone(), "current".to_string(), description.clone(), Utc::now())?;
 
-    if let Some(value) = ongoing_ticket {
-        Ok(format!("Begin [{}], end [{}] with duration={}", ticket, value.ticket, get_ongoing_duration(&value)))
+    if let Some(value) = current_ticket {
+        Ok(format!("Begin [{}], end [{}] with duration={}", ticket, value.ticket, get_current_duration(&value)))
     } else {
         Ok(format!("Begin [{}]", ticket))
     }
 }
 
-pub fn print_ongoing_ticket()  -> Result<String, Box<dyn Error>> {
-    if let Some(value) = ongoing_ticket()? {
-        Ok(format!("{}", format!("[{}]: duration={}", value.ticket, get_ongoing_duration(&value))))
+pub fn print_current_ticket()  -> Result<String, Box<dyn Error>> {
+    if let Some(value) = current_ticket()? {
+        Ok(format!("{}", format!("[{}]: duration={}", value.ticket, get_current_duration(&value))))
     } else {
-        Ok("No ongoing ticket".to_string())    
+        Ok("No current ticket".to_string())    
     }
 }
 
@@ -142,7 +142,7 @@ pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
     Ok("".to_string())
 }
 
-fn get_ongoing_duration(record: &WorklogRecord) -> String {
+fn get_current_duration(record: &WorklogRecord) -> String {
     let now = Utc::now();
     let delta = now.signed_duration_since(record.started_date);
     let delta_minutes = delta.num_minutes();
@@ -150,21 +150,21 @@ fn get_ongoing_duration(record: &WorklogRecord) -> String {
     format!("{}m", delta_minutes)
 }
 
-fn ongoing_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
-    let ongoing = read_worklog()?
+fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
+    let current = read_worklog()?
         .into_iter()
-        .filter(|item| item.time_spent == "ongoing")
+        .filter(|item| item.time_spent == "current")
         .next();
         
-    Ok(ongoing)
+    Ok(current)
 }
 
 pub fn end() -> Result<String, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
     let result: Result<String, Box<dyn Error>>;
     
-    if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "ongoing") {
-        item.time_spent = get_ongoing_duration(&item);
+    if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "current") {
+        item.time_spent = get_current_duration(&item);
         result = Ok(format!("End [{}]: time spent={}", item.ticket, item.time_spent))
     } else {
         result = Ok("Nothing to end".to_string())
@@ -208,7 +208,7 @@ fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn validate_jira_time_spent(input: &str) -> Result<(), Box<dyn Error>> {
-    if input == "ongoing" {
+    if input == "current" {
         return Ok(())
     }
 
