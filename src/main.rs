@@ -16,6 +16,7 @@ struct Cli {
     command: Option<Commands>,
 }
 
+/// Command line tool to record worklog items to Jira
 #[derive(Subcommand)]
 enum Commands {
     /// Add work item
