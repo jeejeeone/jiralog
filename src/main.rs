@@ -1,4 +1,6 @@
 mod worklog;
+mod jira;
+
 use chrono::{DateTime, Utc};
 use csvlens::run_csvlens;
 use std::error::Error;
@@ -20,7 +22,8 @@ enum Commands {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
-        /// Time spent in Jira format, for example 1d5h
+        // TODO: make tz configurable
+        /// Work started, uses ISO8601 format. For example '2007-11-20T22:19:17+02:00'
         started_date: DateTime<Utc>,
         /// Add description for work
         #[arg(short, long)]

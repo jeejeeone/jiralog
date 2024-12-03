@@ -3,7 +3,7 @@ use reqwest::Client;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
-use std::io::{stdout, BufRead, Seek, Write};
+use std::io::{self, stdout, BufRead, Seek, Write};
 use regex::Regex;
 use std::io::stdin;
 use std::path::PathBuf;
@@ -26,7 +26,20 @@ struct WorklogRecord {
 }
 
 struct Configuration {
-    token: String
+    token: String,
+    jira_cloud_instance: Option<String>,
+    jira_url: Option<String>,
+    user: String
+}
+
+impl Configuration {
+    fn get_jira_url(&self) -> String {
+        self.jira_cloud_instance
+            .as_ref()
+            .map(|instance| format!("https://{}.atlassian.net", instance))
+            .or_else(|| self.jira_url.clone())
+            .expect("Configura jira_cloud_instance or jira_url")
+    }
 }
 
 static WORKLOG_FILE: &str = "worklog.csv";
@@ -222,14 +235,20 @@ pub fn validate_jira_time_spent(input: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn configure() -> Result<String, Box<dyn Error>> {
-    print!("Enter Jira token: ");
-    stdout().flush().unwrap();
+    let read_stdin = |msg: String| {
+        print!("{}", msg);
+        stdout().flush().unwrap();
 
-    let mut input = String::new(); // Create a mutable String to store the input
-    stdin()
-        .read_line(&mut input) // Read a line of input into the String
-        .expect("Failed to read line");
-    input = input.trim_end().to_string();
+        let mut input = String::new(); // Create a mutable String to store the input
+        stdin()
+            .read_line(&mut input) // Read a line of input into the String
+            .expect("Failed to read line");
+        input.trim_end().to_string()
+    };
+
+    let user = read_stdin("Enter Jira user: ".to_string());
+    let token = read_stdin("Enter Jira token: ".to_string());
+    let instance = read_stdin("Enter Jira cloud instance: ".to_string());
     
     let jiralog_dir = get_config_dir_path();
 
@@ -240,7 +259,9 @@ pub fn configure() -> Result<String, Box<dyn Error>> {
     let config_path = get_config_path();
 
     let mut src_map1 = HashMap::new();
-    src_map1.insert("token".to_string(), input);
+    src_map1.insert("token".to_string(), token);
+    src_map1.insert("jira_cloud_instance".to_string(), instance);
+    src_map1.insert("user".to_string(), user);
 
     let file = File::create(&config_path)?;
     write(BufWriter::new(file), &src_map1)?;
@@ -278,18 +299,36 @@ fn read_config() -> Result<Configuration, Box<dyn Error>> {
     let config_map = read(BufReader::new(config))?;
     
     let token = config_map.get("token").expect("No token found");
+    let jira_url = config_map.get("jira_url");
+    let jira_cloud_instance = config_map.get("jira_cloud_instance");
+    let user = config_map.get("user").expect("User not configured");
 
-    Ok(Configuration { token: token.to_string() })
+    Ok(Configuration { token: token.to_string(), jira_url: jira_url.cloned(), jira_cloud_instance: jira_cloud_instance.cloned(), user: user.to_string() })
 }
 
 pub fn commit() -> Result<String, Box<dyn Error>> {
-    let worklog = read_worklog()?;
+    let worklog: Vec<WorklogRecord> = read_worklog()?;
+    let config = read_config()?;
 
-    for item in worklog {
-        update_time_spent("http://localhost:8080", "jarijoki1@gmail.com", "token", item)?;
+    let update = |item| -> Result<(), Box <dyn Error>> {
+        update_time_spent(&config.get_jira_url(), &config.user, &config.token, item).map(|_|())?;
+        update_committed(item)?;
+        Ok(())
+    };
+
+    worklog
+        .iter()
+        .try_for_each(update)?;
+
+    if worklog.is_empty() {
+        Ok("Nothing to commit".to_string())
+    } else {
+        Ok("All done!".to_string())
     }
+}
 
-    Ok("a".to_string())
+pub fn update_committed(worklog: &WorklogRecord) -> Result<(), Box<dyn Error>> {
+    Ok(())   
 }
 
 pub fn print_info() -> Result<String, Box<dyn Error>> {
@@ -328,9 +367,9 @@ pub fn print_info() -> Result<String, Box<dyn Error>> {
 
 pub fn update_time_spent(
     jira_url: &str,
-    username: &str,
+    user: &str,
     api_token: &str,
-    worklog: WorklogRecord,
+    worklog: &WorklogRecord,
 ) -> Result<String, Box<dyn Error>> {
     let client = reqwest::blocking::Client::new();
     let url = format!("{}/rest/api/3/issue/{}/worklog", jira_url, worklog.ticket);
@@ -338,17 +377,15 @@ pub fn update_time_spent(
     let payload = serde_json::json!({
         "timeSpent": worklog.time_spent,
         "started": worklog.started_date.to_rfc3339(),
-        "comment": worklog.description,
     });
 
-
-    let request = client
-        .post(&url)
-        .bearer_auth("token".to_string())
-        .json(&payload);
-
-
-    let response = request.send();
+    let response = client
+        .post(url)
+        .basic_auth(user, Some(api_token))
+        .header("Accept", "application/json")
+        .header("Content-Type", "application/json")
+        .json(&payload)
+        .send();
 
     match response {
         Ok(resp) => println!("Request succeeded with status: {}", resp.status()),
