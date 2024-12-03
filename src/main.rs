@@ -1,5 +1,6 @@
 mod worklog;
 mod jira;
+mod model;
 
 use chrono::{DateTime, Utc};
 use csvlens::run_csvlens;

@@ -1,10 +1,8 @@
 use chrono::{DateTime, Utc};
-use reqwest::Client;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, stdout, BufRead, Seek, Write};
-use regex::Regex;
+use std::io::{stdout, BufRead, Seek, Write};
 use std::io::stdin;
 use std::path::PathBuf;
 use dirs;
@@ -13,34 +11,11 @@ use std::io::BufWriter;
 use java_properties::read;
 use std::io::BufReader;
 use inline_colorization::*;
-use http::StatusCode;
 
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-struct WorklogRecord {
-    ticket: String,
-    time_spent: String,
-    description: String,
-    started_date: DateTime<Utc>,
-    committed: bool
-}
-
-struct Configuration {
-    token: String,
-    jira_cloud_instance: Option<String>,
-    jira_url: Option<String>,
-    user: String
-}
-
-impl Configuration {
-    fn get_jira_url(&self) -> String {
-        self.jira_cloud_instance
-            .as_ref()
-            .map(|instance| format!("https://{}.atlassian.net", instance))
-            .or_else(|| self.jira_url.clone())
-            .expect("Configura jira_cloud_instance or jira_url")
-    }
-}
+use crate::model::WorklogRecord;
+use crate::model::Configuration;
+use crate::jira::validate_jira_time_spent;
+use crate::jira::update_time_spent;
 
 static WORKLOG_FILE: &str = "worklog.csv";
 
@@ -74,9 +49,10 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     writer.serialize(item)?;
 
     let success_message = format!(
-        "Added [{}]: time spent='{}', description='{}'",
+        "Added [{}]: time spent='{}', started_date={}, description='{}'",
         ticket,
         time_spent,
+        started_date,
         description,
     );
 
@@ -210,28 +186,11 @@ fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
         .open(get_csv_path())?;
 
     let mut writer = csv::WriterBuilder::new().from_writer(file);
-
-    for record in worklog {
-        writer.serialize(record)?;
-    }
+    worklog.iter().try_for_each(|v| writer.serialize(v))?;
 
     writer.flush()?;
 
     Ok(())
-}
-
-pub fn validate_jira_time_spent(input: &str) -> Result<(), Box<dyn Error>> {
-    if input == "current" {
-        return Ok(())
-    }
-
-    let re = Regex::new(r"^(\d+[mdhw])+$").unwrap();
-
-    if re.is_match(input) {
-        Ok(())
-    } else {
-        Err("Invalid time spent, use jira time spent format, for example 1d5h".into())
-    }
 }
 
 pub fn configure() -> Result<String, Box<dyn Error>> {
@@ -328,7 +287,7 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
 }
 
 pub fn update_committed(worklog: &WorklogRecord) -> Result<(), Box<dyn Error>> {
-    Ok(())   
+    Ok(())
 }
 
 pub fn print_info() -> Result<String, Box<dyn Error>> {
@@ -361,36 +320,6 @@ pub fn print_info() -> Result<String, Box<dyn Error>> {
     println!("Total items {}, uncommitted items {}", items.len(), 0);
 
     println!("{color_reset}");
-
-    Ok("".to_string())
-}
-
-pub fn update_time_spent(
-    jira_url: &str,
-    user: &str,
-    api_token: &str,
-    worklog: &WorklogRecord,
-) -> Result<String, Box<dyn Error>> {
-    let client = reqwest::blocking::Client::new();
-    let url = format!("{}/rest/api/3/issue/{}/worklog", jira_url, worklog.ticket);
-
-    let payload = serde_json::json!({
-        "timeSpent": worklog.time_spent,
-        "started": worklog.started_date.to_rfc3339(),
-    });
-
-    let response = client
-        .post(url)
-        .basic_auth(user, Some(api_token))
-        .header("Accept", "application/json")
-        .header("Content-Type", "application/json")
-        .json(&payload)
-        .send();
-
-    match response {
-        Ok(resp) => println!("Request succeeded with status: {}", resp.status()),
-        Err(err) => println!("Request failed with error: {}", err),
-    }
 
     Ok("".to_string())
 }
