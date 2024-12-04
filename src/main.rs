@@ -1,9 +1,11 @@
 mod worklog;
 mod jira;
 mod model;
+mod editor;
 
 use chrono::{DateTime, Utc};
 use csvlens::run_csvlens;
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use std::error::Error;
 use inline_colorization::*;
 
@@ -115,7 +117,7 @@ fn main() {
             run(|| worklog::print_info())
         }
         Some(Commands::Purge { }) => {
-            println!("purge");
+            
         }
         None => {}
     }

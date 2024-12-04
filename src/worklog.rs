@@ -1,10 +1,13 @@
 use chrono::{DateTime, Utc};
+use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
 use std::io::{stdout, BufRead, Seek, Write};
 use std::io::stdin;
 use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
 use dirs;
 use java_properties::write;
 use std::io::BufWriter;
@@ -269,20 +272,30 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
     let worklog: Vec<WorklogRecord> = read_worklog()?;
     let config = read_config()?;
 
-    let update = |item| -> Result<(), Box <dyn Error>> {
-        update_time_spent(&config.get_jira_url(), &config.user, &config.token, item).map(|_|())?;
-        update_committed(item)?;
-        Ok(())
-    };
+    if !worklog.is_empty() {
+        let pb = ProgressBar::new(worklog.len() as u64);
+        pb.set_style(
+            ProgressStyle::with_template("{spinner:.white} {msg:15} [{bar:80.white/gray}] ({pos}/{len})").unwrap()
+        );
 
-    worklog
-        .iter()
-        .try_for_each(update)?;
+        let update = |item: &WorklogRecord| -> Result<(), Box <dyn Error>> {
+            pb.set_message(item.ticket.clone());
 
-    if worklog.is_empty() {
-        Ok("Nothing to commit".to_string())
-    } else {
+            //update_time_spent(&config.get_jira_url(), &config.user, &config.token, item).map(|_|())?;
+            //update_committed(item)?;
+            thread::sleep(Duration::from_millis(500));
+            
+            pb.inc(1);
+            Ok(())
+        };
+
+        worklog
+            .iter()
+            .try_for_each(update)?;
+
         Ok("All done!".to_string())
+    } else {
+        Ok("Nothing to commit".to_string())
     }
 }
 

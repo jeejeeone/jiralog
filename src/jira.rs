@@ -14,7 +14,7 @@ pub fn update_time_spent(
 
     let payload = serde_json::json!({
         "timeSpent": worklog.time_spent,
-        "started": worklog.started_date.to_rfc3339(),
+        "started": worklog.started_date.format("%Y-%m-%dT%H:%M:%S.%3f%z").to_string(),
     });
 
     let response = client
