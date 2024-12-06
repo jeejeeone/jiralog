@@ -5,6 +5,7 @@ mod editor;
 
 use chrono::{DateTime, Utc};
 use csvlens::run_csvlens;
+
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use std::error::Error;
 use inline_colorization::*;
@@ -108,7 +109,7 @@ fn main() {
             ));
         }
         Some(Commands::End {}) => {
-            run(|| worklog::end());
+            run(|| worklog::end_current());
         }
         Some(Commands::Configure { }) => {
             run(|| worklog::configure())

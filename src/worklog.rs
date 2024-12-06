@@ -1,9 +1,10 @@
+use nanoid::nanoid;
 use chrono::{DateTime, Utc};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
-use std::io::{stdout, BufRead, Seek, Write};
+use std::io::{stdout, BufRead, Cursor, Seek, Write};
 use std::io::stdin;
 use std::path::PathBuf;
 use std::thread;
@@ -15,15 +16,17 @@ use java_properties::read;
 use std::io::BufReader;
 use inline_colorization::*;
 
-use crate::model::WorklogRecord;
+use crate::editor::run_editor;
+use crate::model::{self, WorklogRecord};
 use crate::model::Configuration;
 use crate::jira::validate_jira_time_spent;
 use crate::jira::update_time_spent;
 
 static WORKLOG_FILE: &str = "worklog.csv";
+static COMMIT_FILE: &str = "commit_worklog";
 
 pub fn worklog_path() -> String {
-    get_csv_path().to_str().expect("No csv path").to_string()
+    get_worklog_path().to_str().expect("No csv path").to_string()
 }
 
 pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<Utc>)  -> Result<String, Box<dyn Error>>  {
@@ -33,7 +36,7 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         .write(true)
         .create(true)
         .append(true)
-        .open(get_csv_path())
+        .open(get_worklog_path())
         .unwrap();
 
     let needs_headers = file.seek(std::io::SeekFrom::End(0))? == 0;
@@ -47,6 +50,7 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         description: description.clone(),
         started_date: started_date,
         committed: false,
+        id: model::get_nano_id(),
     };
 
     writer.serialize(item)?;
@@ -102,7 +106,7 @@ pub fn pop() -> Result<String, Box<dyn Error>> {
 
 pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Error>> {
     let current_ticket = current_ticket()?;
-    end()?;
+    end_current()?;
     add(ticket.clone(), "current".to_string(), description.clone(), Utc::now())?;
 
     if let Some(value) = current_ticket {
@@ -121,7 +125,7 @@ pub fn print_current_ticket()  -> Result<String, Box<dyn Error>> {
 }
 
 pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
-    let file = File::open(&get_csv_path())?;
+    let file = File::open(&get_worklog_path())?;
     let reader = BufReader::new(file);
 
     for (index, line) in reader.lines().enumerate() {
@@ -151,7 +155,7 @@ fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     Ok(current)
 }
 
-pub fn end() -> Result<String, Box<dyn Error>> {
+pub fn end_current() -> Result<String, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
     let result: Result<String, Box<dyn Error>>;
     
@@ -181,12 +185,17 @@ fn read_worklog() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
     }
 }
 
+fn read_worklog_uncommitted() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
+    let worklog = read_worklog()?;
+    Ok(worklog.into_iter().filter(|v| !v.committed).collect())
+}
+
 fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
     let file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
-        .open(get_csv_path())?;
+        .open(get_worklog_path())?;
 
     let mut writer = csv::WriterBuilder::new().from_writer(file);
     worklog.iter().try_for_each(|v| writer.serialize(v))?;
@@ -249,9 +258,16 @@ fn get_config_path() -> PathBuf {
     config_path
 }
 
-fn get_csv_path() -> PathBuf {
+fn get_worklog_path() -> PathBuf {
     let mut config_dir = get_config_dir_path();
     config_dir.push(WORKLOG_FILE);
+    
+    config_dir
+}
+
+fn get_commit_path() -> PathBuf {
+    let mut config_dir = get_config_dir_path();
+    config_dir.push(COMMIT_FILE);
     
     config_dir
 }
@@ -264,16 +280,32 @@ fn read_config() -> Result<Configuration, Box<dyn Error>> {
     let jira_url = config_map.get("jira_url");
     let jira_cloud_instance = config_map.get("jira_cloud_instance");
     let user = config_map.get("user").expect("User not configured");
+    let editor = config_map.get("editor");
 
-    Ok(Configuration { token: token.to_string(), jira_url: jira_url.cloned(), jira_cloud_instance: jira_cloud_instance.cloned(), user: user.to_string() })
+    Ok(
+        Configuration {
+            token: token.to_string(), 
+            jira_url: jira_url.cloned(), 
+            jira_cloud_instance: jira_cloud_instance.cloned(), 
+            user: user.to_string(),
+            editor: editor.cloned(),
+        }
+    )
 }
 
 pub fn commit() -> Result<String, Box<dyn Error>> {
-    let worklog: Vec<WorklogRecord> = read_worklog()?;
+    end_current()?;
+    let worklog_uncommitted: Vec<WorklogRecord> = read_worklog_uncommitted()?;
     let config = read_config()?;
 
-    if !worklog.is_empty() {
-        let pb = ProgressBar::new(worklog.len() as u64);
+    if !worklog_uncommitted.is_empty() {
+        let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &config.get_editor_command(), &get_commit_path())?;
+
+        if commit_worklog.is_empty() {
+            return Ok("Abort commit!".to_string());
+        }
+
+        let pb = ProgressBar::new(worklog_uncommitted.len() as u64);
         pb.set_style(
             ProgressStyle::with_template("{spinner:.white} {msg:15} [{bar:80.white/gray}] ({pos}/{len})").unwrap()
         );
@@ -282,14 +314,25 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
             pb.set_message(item.ticket.clone());
 
             //update_time_spent(&config.get_jira_url(), &config.user, &config.token, item).map(|_|())?;
-            //update_committed(item)?;
+
+            let commit_item = WorklogRecord {
+                committed: true,
+                ..item.clone()
+            };
+
+            update_item(&commit_item)?;
+
             thread::sleep(Duration::from_millis(500));
             
             pb.inc(1);
+
             Ok(())
         };
 
-        worklog
+        let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(Cursor::new(commit_worklog.join("\n")));
+        let to_commit: Vec<WorklogRecord> = rdr.deserialize().collect::<Result<_, _>>()?;
+
+        to_commit
             .iter()
             .try_for_each(update)?;
 
@@ -299,7 +342,14 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
     }
 }
 
-pub fn update_committed(worklog: &WorklogRecord) -> Result<(), Box<dyn Error>> {
+pub fn update_item(item: &WorklogRecord) -> Result<(), Box<dyn Error>> {
+    let mut worklog = read_worklog()?;
+
+    if let Some(index) = worklog.iter().position(|r| r.id == item.id) {
+        worklog[index] = item.clone();
+        write_worklog(worklog)?;
+    }
+
     Ok(())
 }
 
@@ -326,7 +376,7 @@ pub fn print_info() -> Result<String, Box<dyn Error>> {
     println!("");
     
     println!("Worklog: 
-    {}", get_csv_path().display());
+    {}", get_worklog_path().display());
 
     println!("");
 
