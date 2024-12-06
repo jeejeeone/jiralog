@@ -25,6 +25,12 @@ use crate::jira::update_time_spent;
 static WORKLOG_FILE: &str = "worklog.csv";
 static COMMIT_FILE: &str = "commit_worklog";
 
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref CONFIG: Configuration = read_config().expect("Unable to load configuration");
+}
+
 pub fn worklog_path() -> String {
     get_worklog_path().to_str().expect("No csv path").to_string()
 }
@@ -296,10 +302,9 @@ fn read_config() -> Result<Configuration, Box<dyn Error>> {
 pub fn commit() -> Result<String, Box<dyn Error>> {
     end_current()?;
     let worklog_uncommitted: Vec<WorklogRecord> = read_worklog_uncommitted()?;
-    let config = read_config()?;
 
     if !worklog_uncommitted.is_empty() {
-        let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &config.get_editor_command(), &get_commit_path())?;
+        let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &CONFIG.get_editor_command(), &get_commit_path())?;
 
         if commit_worklog.is_empty() {
             return Ok("Abort commit!".to_string());
