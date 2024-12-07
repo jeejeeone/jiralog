@@ -1,6 +1,6 @@
 # Jiralog
 
-Update Jira worklog from command line with helpful utilities, soothe the jira pain... Works with Jira api v3.
+Update Jira issue worklog from command line with helpful utilities, soothe the jira pain... Works with Jira api v3.
 
 <p align="left"><img src="/demo/demo.gif?raw=true" style="height: 550px; width: auto; object-fit: cover; object-position: top;"/></p>
 
@@ -26,6 +26,58 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
+```
+
+## Workflow
+
+**Record time while you go**
+Note! commit ends current work
+```
+jj@jj worklog % jiralog begin ABC-1
+Begin d32e8c4df9: ticket=ABC-1
+
+jj@jj worklog % jiralog begin ABC-2 # Record time automatically to ABC-1
+End d32e8c4df9: ticket=ABC-1, time spent=5m
+
+Begin e3a238906f: ticket=ABC-2
+```
+
+**Add worklog items**
+```
+# Started date from now
+jj@jj worklog % jiralog add ABC-2 3h
+Added a9c99c703a: ticket=ABC-2, time spent=3h, started_date=2024-12-07 21:48:07.002467 +02:00, description=  
+
+# Start date within current day
+jj@jj worklog % jiralog add ABC-2 3h --start-date 9:30  
+Added d37b129482: ticket=ABC-2, time spent=3h, started_date=2024-12-07 09:30:00 +02:00, description=
+
+# Start date from datetime
+jj@jj worklog % jiralog add ABC-5 3h --start-date 2024-09-09T10:10  
+Added 00719956af: ticket=ABC-5, time spent=3h, started_date=2024-09-09 10:10:00 +02:00, description=
+```
+
+**Remove worklog items**
+```
+# Remove previous entry
+jj@jj worklog % jiralog pop
+Removed 00719956af: ticket=ABC-5, time spent=3h, description=
+
+# Rremove some entry
+jj@jj worklog % jiralog rm a9c99c703a
+Removed a9c99c703a
+```
+
+**Explore worklog items**
+
+```
+# Explore items with csvlens
+jj@jj worklog % jiralog show
+
+# Items to stdout
+jj@jj worklog % jiralog show --stdout
+ticket,time_spent,description,started_date,committed,id
+ABC-1,1m,,2024-12-07T21:11:44.827321+02:00,true,1467c62b9c
 ```
 
 # Configure
