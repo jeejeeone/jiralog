@@ -44,7 +44,7 @@ Begin e3a238906f: ticket=ABC-2
 
 **Add worklog items**
 ```
-# Started date from now
+# Start date from now
 jj@jj worklog % jiralog add ABC-2 3h
 Added a9c99c703a: ticket=ABC-2, time spent=3h, started_date=2024-12-07 21:48:07.002467 +02:00, description=  
 
@@ -69,9 +69,13 @@ jj@jj worklog % jiralog commit
 jj@jj worklog % jiralog pop
 Removed 00719956af: ticket=ABC-5, time spent=3h, description=
 
-# Rremove some entry
+# Remove some entry
 jj@jj worklog % jiralog rm a9c99c703a
 Removed a9c99c703a
+
+# Remove committed items
+jj@jj worklog % jiralog purge
+Removed 7 items
 ```
 
 **Explore worklog items**
