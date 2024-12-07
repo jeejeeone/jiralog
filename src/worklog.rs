@@ -1,4 +1,3 @@
-use nanoid::nanoid;
 use chrono::{DateTime, FixedOffset, Local, Utc};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
@@ -6,7 +5,6 @@ use std::error::Error;
 use std::fs::{self, File, OpenOptions};
 use std::io::{stdout, BufRead, Cursor, Seek, Write};
 use std::io::stdin;
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -118,7 +116,7 @@ pub fn worklog_to_stdout() -> Result<WorklogMessage, Box<dyn Error>> {
         println!("{}", v);
     }
 
-    Ok(WorklogMessage("".to_string()))
+    empty_ok()
 }
 
 fn get_current_duration(record: &WorklogRecord) -> String {
@@ -295,7 +293,7 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
         let update = |item: &WorklogRecord| -> Result<(), Box <dyn Error>> {
             pb.set_message(item.ticket.clone());
 
-            //update_time_spent(&config.get_jira_url(), &config.user, &config.token, item).map(|_|())?;
+            update_time_spent(&CONFIG.get_jira_url(), &CONFIG.user, &CONFIG.token, item).map(|_|())?;
 
             let commit_item = WorklogRecord {
                 committed: true,
@@ -366,10 +364,25 @@ pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
 
     println!("{color_reset}");
 
-    Ok(WorklogMessage("".to_string()))
+    empty_ok()
 }
 
 pub struct BeginWorklog {
     pub previous: Option<WorklogRecord>,
     pub current: WorklogRecord
+}
+
+fn empty_ok() -> Result<WorklogMessage, Box<dyn Error>> {
+    Ok(WorklogMessage("".to_string()))
+}
+
+pub fn purge() -> Result<usize, Box<dyn Error>> {
+    let worklog = read_worklog()?;
+    
+    let uncommitted = read_worklog_uncommitted()?;
+    let uncommitted_length = uncommitted.len();
+
+    write_worklog(uncommitted)?;
+
+    Ok(worklog.len() - uncommitted_length)
 }

@@ -3,7 +3,7 @@ mod jira;
 mod model;
 mod editor;
 
-use chrono::{DateTime, Local, Utc};
+use chrono::Local;
 use csvlens::run_csvlens;
 use model::{WorklogMessage, WorklogRecord};
 use worklog::BeginWorklog;
@@ -176,7 +176,7 @@ fn main() {
             run_with_default_msg(|| worklog::print_info())
         }
         Some(Commands::Purge { }) => {
-
+            run(|| worklog::purge(), |removed_count| format!("Removed {} items", removed_count))
         }
         None => {}
     }
