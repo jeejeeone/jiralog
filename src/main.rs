@@ -20,15 +20,15 @@ struct Cli {
     command: Option<Commands>,
 }
 
-/// Command line tool to record worklog items to Jira
+/// Command line tool to update issue worklog in Jira
 #[derive(Subcommand)]
 enum Commands {
-    /// Add work item
+    /// Add work item, by default started date is current time
     Add {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
-        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'
+        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'. HH:MM defaults to current day.
         #[arg(short, long)]
         started_date: Option<String>,
         /// Add description for work
@@ -57,7 +57,7 @@ enum Commands {
     Commit {},
     /// Remove committed entries from worklog
     Purge {},
-    /// Show worklog using terminal ui
+    /// Show worklog using csvlens, optionally to stdout
     Show {
         /// Output worklog to stdout
         #[arg(short, long)]
@@ -128,20 +128,17 @@ fn main() {
                 match begin_worklog.previous {
                     Some(previous) => 
                         format!(
-                            "End {}: time spent='{}', description='{}'\nBegin {}: ticket='{}', description='{}'", 
+                            "End {}: time spent={}\nBegin {}: ticket={}", 
                             previous.id,
                             previous.time_spent, 
-                            previous.description,
                             begin_worklog.current.id,
                             begin_worklog.current.ticket,
-                            begin_worklog.current.description
                         ),
                     None =>
                         format!(
-                            "Begin {}: ticket='{}', description='{}'", 
+                            "Begin {}: ticket={}", 
                             begin_worklog.current.id,
                             begin_worklog.current.ticket,
-                            begin_worklog.current.description
                         )
                 }
             };

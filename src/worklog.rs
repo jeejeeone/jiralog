@@ -86,13 +86,23 @@ pub fn pop() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
 }
 
 pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dyn Error>> {
-    let current_ticket = current_ticket()?;
+    let current_ticket_id = 
+    current_ticket()?
+    .map(|v| v.id);
+
     end_current()?;
     let added = add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
 
+    let previous = 
+        if !current_ticket_id.is_none() {
+            find_item(current_ticket_id.unwrap())?
+        } else {
+            None
+        };
+
     Ok(
         BeginWorklog {
-            previous: current_ticket,
+            previous: previous,
             current: added
         }
     )
@@ -139,6 +149,7 @@ pub fn end_current() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
 
     if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "current") {
         item.time_spent = get_current_duration(item);
+        
         result = Ok(Some(item.clone()))
     } else {
         result = Ok(None)
@@ -166,6 +177,13 @@ fn read_worklog() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
 fn read_worklog_uncommitted() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
     let worklog = read_worklog()?;
     Ok(worklog.into_iter().filter(|v| !v.committed).collect())
+}
+
+fn find_item(id: String) -> Result<Option<WorklogRecord>, Box<dyn Error>> {
+    let worklog = read_worklog()?;
+    let item = worklog.iter().find(|&v| v.id == id);
+
+    Ok(item.cloned())
 }
 
 fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
