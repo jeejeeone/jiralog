@@ -59,48 +59,4 @@ Example:
 
 # Commands
 
-## Begin
-
-```
-Begin work item, ends previous work, records time automatically
-
-Usage: jiralog begin [OPTIONS] <TICKET>
-
-Arguments:
-  <TICKET>
-
-Options:
-  -d, --description <DESCRIPTION>  Add description for work
-```
-
-Example:
-
-```
-> jiralog begin ABC-1
-Begin a903aabda8: ticket=ABC-1
-
-> jiralog begin ABC-2
-End b839e77b57: time spent=1m
-Begin 0ddc328876: ticket=ABC-2
-```
-
-## Add
-
-```
-Add work item, by default started date is current time
-
-Usage: jiralog add [OPTIONS] <TICKET> <TIME_SPENT>
-
-Arguments:
-  <TICKET>
-  <TIME_SPENT>  Time spent in Jira format, for example 1d5h
-
-Options:
-  -s, --started-date <STARTED_DATE>  Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'. HH:MM defaults to current day
-  -d, --description <DESCRIPTION>    Add description for work
-```
-
-```
-jiralog add ABC-2 1d3h
-Added aa08dbe84b: ticket=ABC-2, time spent=1d3h, started_date=2024-12-07 16:00:53.461856 +02:00, description=''
-```
+TODO
