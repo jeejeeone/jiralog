@@ -2,7 +2,7 @@
 
 Update Jira worklog from command line with helpful utilities, soothe the jira pain... Works with Jira api v3.
 
-<p align="center"><img src="/demo/demo.gif?raw=true"/></p>
+<p align="left"><img src="/demo/demo.gif?raw=true" height=600/></p>
 
 ```
 Command line tool to update issue worklog in Jira
