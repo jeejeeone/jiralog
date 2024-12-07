@@ -82,7 +82,7 @@ fn main() {
             ));
         }
         Some(Commands::Rm { id }) => {
-            run(|| worklog::remove(**&item_index as usize - 1));
+            run(|| worklog::remove(id));
         }
         Some(Commands::Pop {}) => {
             run(|| worklog::pop());

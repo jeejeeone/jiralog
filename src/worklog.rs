@@ -50,19 +50,22 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         .has_headers(needs_headers)
         .from_writer(file);
 
+    let id = model::get_nano_id();
+    
     let item = WorklogRecord {
         ticket: ticket.clone(),
         time_spent: time_spent.clone(),
         description: description.clone(),
         started_date: started_date,
         committed: false,
-        id: model::get_nano_id(),
+        id: id.clone(),
     };
 
     writer.serialize(item)?;
 
     let success_message = format!(
-        "Added [{}]: time spent='{}', started_date={}, description='{}'",
+        "Added {}: ticket='{}', time spent='{}', started_date={}, description='{}'",
+        id,
         ticket,
         time_spent,
         started_date,
@@ -72,9 +75,9 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     Ok(success_message)
 }
 
-pub fn remove(id: String) -> Result<String, Box<dyn Error>> {
+pub fn remove(id: &String) -> Result<String, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
-    if let Some(item_position) = worklog.iter().position(|v| v.id == id) {
+    if let Some(item_position) = worklog.iter().position(|v| &v.id == id) {
         worklog.remove(item_position);
         write_worklog(worklog)?;
 
@@ -93,7 +96,8 @@ pub fn pop() -> Result<String, Box<dyn Error>> {
     match item {
         Some(value) =>
             Ok(format!(
-                "Removed [{}]: time spent='{}', description='{}'",
+                "Removed {}: ticket='{}', time spent='{}', description='{}'",
+                value.id,
                 value.ticket,
                 value.time_spent,
                 value.description,
