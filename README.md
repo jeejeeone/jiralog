@@ -57,6 +57,12 @@ jj@jj worklog % jiralog add ABC-5 3h --start-date 2024-09-09T10:10
 Added 00719956af: ticket=ABC-5, time spent=3h, started_date=2024-09-09 10:10:00 +02:00, description=
 ```
 
+**Commit worklog to Jira**
+´´´
+# Open editor to edit entries before commit, removing all entries aborts commit
+jj@jj worklog % jiralog commit
+```
+
 **Remove worklog items**
 ```
 # Remove previous entry
@@ -107,8 +113,3 @@ Example:
   user=jj
   editor=nano
 ```
-
-
-# Commands
-
-TODO
