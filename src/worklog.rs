@@ -1,5 +1,5 @@
 use nanoid::nanoid;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, FixedOffset, Local, Utc};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 use std::error::Error;
@@ -35,7 +35,7 @@ pub fn worklog_path() -> String {
     get_worklog_path().to_str().expect("No csv path").to_string()
 }
 
-pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<Utc>)  -> Result<String, Box<dyn Error>>  {
+pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<FixedOffset>)  -> Result<String, Box<dyn Error>>  {
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
@@ -113,7 +113,7 @@ pub fn pop() -> Result<String, Box<dyn Error>> {
 pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Error>> {
     let current_ticket = current_ticket()?;
     end_current()?;
-    add(ticket.clone(), "current".to_string(), description.clone(), Utc::now())?;
+    add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
 
     if let Some(value) = current_ticket {
         Ok(format!("Begin [{}], end [{}] with duration={}", ticket, value.ticket, get_current_duration(&value)))
@@ -134,11 +134,9 @@ pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
     let file = File::open(&get_worklog_path())?;
     let reader = BufReader::new(file);
 
-    for (index, line) in reader.lines().enumerate() {
-        match line {
-            Ok(content) => println!("{}: {}", index, content),
-            Err(e) => eprintln!("Error reading line"),
-        }
+    for line in reader.lines() {
+        let v = line?;
+        println!("{}", v);
     }
 
     Ok("".to_string())
@@ -307,7 +305,7 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
         let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &CONFIG.get_editor_command(), &get_commit_path())?;
 
         if commit_worklog.is_empty() {
-            return Ok("Abort commit!".to_string());
+            return Ok("Abort commit".to_string());
         }
 
         let pb = ProgressBar::new(worklog_uncommitted.len() as u64);
@@ -341,7 +339,7 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
             .iter()
             .try_for_each(update)?;
 
-        Ok("All done!".to_string())
+        Ok("All done".to_string())
     } else {
         Ok("Nothing to commit".to_string())
     }

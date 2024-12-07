@@ -3,10 +3,9 @@ mod jira;
 mod model;
 mod editor;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use csvlens::run_csvlens;
 
-use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use std::error::Error;
 use inline_colorization::*;
 
@@ -28,8 +27,9 @@ enum Commands {
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
         // TODO: make tz configurable
-        /// Work started, uses ISO8601 format. For example '2007-11-20T22:19:17+02:00'
-        started_date: DateTime<Utc>,
+        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'
+        #[arg(short, long)]
+        started_date: Option<String>,
         /// Add description for work
         #[arg(short, long)]
         description: Option<String>,
@@ -78,6 +78,8 @@ fn main() {
                 time_spent.to_string(), 
                 description.as_deref().unwrap_or("").to_string(),
                 started_date.clone()
+                    .map(|v| model::get_started_date(&v))
+                    .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
             ));
         }
         Some(Commands::Rm { item_index }) => {
@@ -118,7 +120,7 @@ fn main() {
             run(|| worklog::print_info())
         }
         Some(Commands::Purge { }) => {
-            
+
         }
         None => {}
     }

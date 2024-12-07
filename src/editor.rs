@@ -7,16 +7,16 @@ use std::process::{Command, Stdio};
 use serde::Serialize;
 
 pub fn run_editor<T: Serialize>(content: Vec<&T>, editor_command: &str, temp_file_path: &PathBuf) -> Result<Vec<String>, Box<dyn Error>> {
-    let file = OpenOptions::new()
+    let commit_edit_file = OpenOptions::new()
         .write(true)
         .read(true)
         .create(true)
         .truncate(true)
         .open(temp_file_path)?;
         
-    let mut writer = csv::WriterBuilder::new().from_writer(file);
+    let mut writer = csv::WriterBuilder::new().from_writer(commit_edit_file);
     content.iter().try_for_each(|v| writer.serialize(v))?;
-    writer.flush();
+    writer.flush()?;
     
     let status = Command::new(editor_command)
         .arg(temp_file_path)
@@ -26,11 +26,11 @@ pub fn run_editor<T: Serialize>(content: Vec<&T>, editor_command: &str, temp_fil
         return Err(format!("Editor exited with {}", status.code().unwrap_or(1)).into());
     }
 
-    let after_edit_file = OpenOptions::new()
+    let after_edit_commit_file = OpenOptions::new()
         .read(true)
         .open(temp_file_path)?;
 
-    let reader = BufReader::new(after_edit_file);
+    let reader = BufReader::new(after_edit_commit_file);
     let lines = reader.lines().map(|v|v.unwrap()).collect();
 
     std::fs::remove_file(temp_file_path)?;
