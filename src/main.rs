@@ -128,7 +128,7 @@ fn main() {
                 match begin_worklog.previous {
                     Some(previous) => 
                         format!(
-                            "End {}: ticket={}, time spent={}\nBegin {}: ticket={}", 
+                            "End {}: ticket={}, time spent={}\n\nBegin {}: ticket={}", 
                             previous.id,
                             previous.ticket,
                             previous.time_spent, 

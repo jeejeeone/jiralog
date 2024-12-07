@@ -6,8 +6,6 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{stdout, BufRead, Cursor, Seek, Write};
 use std::io::stdin;
 use std::path::PathBuf;
-use std::thread;
-use std::time::Duration;
 use java_properties::write;
 use std::io::BufWriter;
 use java_properties::read;
@@ -316,8 +314,6 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
             };
 
             update_item(&commit_item)?;
-
-            thread::sleep(Duration::from_millis(500));
             
             pb.inc(1);
 
