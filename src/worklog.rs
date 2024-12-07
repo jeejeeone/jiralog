@@ -94,7 +94,7 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
     let added = add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
 
     let previous = 
-        if !current_ticket_id.is_none() {
+        if current_ticket_id.is_some() {
             find_item(current_ticket_id.unwrap())?
         } else {
             None
@@ -102,7 +102,7 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
 
     Ok(
         BeginWorklog {
-            previous: previous,
+            previous,
             current: added
         }
     )
