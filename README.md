@@ -1,8 +1,9 @@
 # Jiralog
 
-Update Jira worklog from command line with helpful utilities, soothe the jira pain... 
+Update Jira worklog from command line with helpful utilities, soothe the jira pain... Works with Jira api v3.
 
-Works with Jira api v3.
+![jiralog demo](https://github.com/jeejeeone/jiralog/blob/main/demo/demo.gif)
+
 
 ```
 Command line tool to update issue worklog in Jira
