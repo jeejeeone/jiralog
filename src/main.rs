@@ -28,7 +28,7 @@ enum Commands {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
-        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'. HH:MM defaults to current day.
+        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'. HH:MM defaults to current day
         #[arg(short, long)]
         started_date: Option<String>,
         /// Add description for work
@@ -82,7 +82,7 @@ fn main() {
                     .map(|v| model::get_started_date(&v))
                     .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
             ), |added_item| format!(
-                "Added {}: ticket='{}', time spent='{}', started_date={}, description='{}'",
+                "Added {}: ticket={}, time spent={}, started_date={}, description={}",
                 added_item.id,
                 added_item.ticket,
                 added_item.time_spent,
@@ -98,7 +98,7 @@ fn main() {
                 worklog::pop, 
                 |popped_item| 
                     popped_item.map(|v| format!(
-                        "Removed {}: ticket='{}', time spent='{}', description='{}'",
+                        "Removed {}: ticket={}, time spent={}, description={}",
                         v.id,
                         v.ticket,
                         v.time_spent,
@@ -128,8 +128,9 @@ fn main() {
                 match begin_worklog.previous {
                     Some(previous) => 
                         format!(
-                            "End {}: time spent={}\nBegin {}: ticket={}", 
+                            "End {}: ticket={}, time spent={}\nBegin {}: ticket={}", 
                             previous.id,
+                            previous.ticket,
                             previous.time_spent, 
                             begin_worklog.current.id,
                             begin_worklog.current.ticket,
@@ -155,7 +156,7 @@ fn main() {
             let end_ouput = |previous: Option<WorklogRecord>| {
                 match previous {
                     Some(value) => 
-                        format!("End {}: ticket='{}', time spent='{}'", value.id, value.ticket, value.time_spent),
+                        format!("End {}: ticket={}, time spent={}", value.id, value.ticket, value.time_spent),
                     None => 
                         "Nothing to end".to_string()
                 }
