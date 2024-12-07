@@ -58,7 +58,7 @@ Added 00719956af: ticket=ABC-5, time spent=3h, started_date=2024-09-09 10:10:00 
 ```
 
 **Commit worklog to Jira**
-´´´
+```
 # Open editor to edit entries before commit, removing all entries aborts commit
 jj@jj worklog % jiralog commit
 ```
