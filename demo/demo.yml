@@ -1,0 +1,407 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/jj
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 164
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 39
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: null
+    title: null
+    style:
+      backgroundColor: black
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 1149
+    content: j
+  - delay: 70
+    content: i
+  - delay: 104
+    content: r
+  - delay: 67
+    content: a
+  - delay: 234
+    content: l
+  - delay: 175
+    content: o
+  - delay: 147
+    content: g
+  - delay: 170
+    content: ' '
+  - delay: 108
+    content: b
+  - delay: 71
+    content: e
+  - delay: 190
+    content: g
+  - delay: 98
+    content: i
+  - delay: 40
+    content: 'n'
+  - delay: 207
+    content: ' '
+  - delay: 243
+    content: A
+  - delay: 235
+    content: B
+  - delay: 245
+    content: C
+  - delay: 361
+    content: '-'
+  - delay: 552
+    content: '1'
+  - delay: 545
+    content: "\r\n"
+  - delay: 18
+    content: "\e[92mBegin 1467c62b9c: ticket=ABC-1\e[39m\r\njj:~ jj$ "
+  - delay: 1000
+    content: j
+  - delay: 62
+    content: i
+  - delay: 110
+    content: r
+  - delay: 42
+    content: a
+  - delay: 504
+    content: l
+  - delay: 213
+    content: o
+  - delay: 155
+    content: g
+  - delay: 186
+    content: ' '
+  - delay: 131
+    content: b
+  - delay: 65
+    content: e
+  - delay: 219
+    content: g
+  - delay: 104
+    content: i
+  - delay: 63
+    content: 'n'
+  - delay: 212
+    content: ' '
+  - delay: 1100
+    content: A
+  - delay: 108
+    content: B
+  - delay: 256
+    content: C
+  - delay: 356
+    content: '-'
+  - delay: 120
+    content: '2'
+  - delay: 958
+    content: "\r\n"
+  - delay: 17
+    content: "\e[92mEnd 1467c62b9c: ticket=ABC-1, time spent=1m\r\n\r\nBegin d646b36f27: ticket=ABC-2\e[39m\r\njj:~ jj$ "
+  - delay: 1000
+    content: j
+  - delay: 55
+    content: i
+  - delay: 36
+    content: r
+  - delay: 59
+    content: a
+  - delay: 344
+    content: l
+  - delay: 203
+    content: o
+  - delay: 130
+    content: g
+  - delay: 221
+    content: ' '
+  - delay: 416
+    content: a
+  - delay: 153
+    content: d
+  - delay: 171
+    content: d
+  - delay: 186
+    content: ' '
+  - delay: 518
+    content: A
+  - delay: 116
+    content: B
+  - delay: 268
+    content: C
+  - delay: 427
+    content: '-'
+  - delay: 153
+    content: '3'
+  - delay: 2172
+    content: ' '
+  - delay: 194
+    content: '1'
+  - delay: 226
+    content: h
+  - delay: 392
+    content: ' '
+  - delay: 350
+    content: '-'
+  - delay: 127
+    content: s
+  - delay: 150
+    content: ' '
+  - delay: 176
+    content: '1'
+  - delay: 100
+    content: '0'
+  - delay: 303
+    content: ':'
+  - delay: 295
+    content: '0'
+  - delay: 153
+    content: '0'
+  - delay: 983
+    content: "\r\n"
+  - delay: 19
+    content: "\e[92mAdded 206c14f34b: ticket=ABC-3, time spent=1h, started_date=2024-12-07 10:00:00 +02:00, description=\e[39m\r\njj:~ jj$ "
+  - delay: 1000
+    content: j
+  - delay: 79
+    content: i
+  - delay: 100
+    content: r
+  - delay: 36
+    content: a
+  - delay: 177
+    content: l
+  - delay: 184
+    content: o
+  - delay: 107
+    content: g
+  - delay: 86
+    content: ' '
+  - delay: 114
+    content: p
+  - delay: 65
+    content: o
+  - delay: 118
+    content: p
+  - delay: 1067
+    content: "\r\n"
+  - delay: 18
+    content: "\e[92mRemoved 206c14f34b: ticket=ABC-3, time spent=1h, description=\e[39m\r\njj:~ jj$ "
+  - delay: 1000
+    content: j
+  - delay: 64
+    content: i
+  - delay: 86
+    content: r
+  - delay: 56
+    content: a
+  - delay: 256
+    content: l
+  - delay: 173
+    content: o
+  - delay: 118
+    content: g
+  - delay: 131
+    content: ' '
+  - delay: 107
+    content: s
+  - delay: 135
+    content: h
+  - delay: 64
+    content: o
+  - delay: 161
+    content: w
+  - delay: 780
+    content: "\r\n"
+  - delay: 19
+    content: "\e[?1049h"
+  - delay: 256
+    content: "\e[1;1H\e[38;2;64;64;64m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\e[2;7H\e[1m\e[39mticket\e[2;17Htime_spent\e[2;31Hdescription\e[2;46Hstarted_date\e[2;82Hcommitted\e[2;95Hid\e[3;1H\e[22m\e[38;2;64;64;64m───┬────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────\e[4;1H\e[1m\e[4m1\e[4;4H\e[22m\e[24m│\e[4;7H\e[1m\e[38;2;192;192;192m\e[48;2;64;64;64mABC-1     1m                           2024-12-07T21:11:44.827321+02:00    false        1467c62b9c    \e[22m\e[38;2;64;64;64m\e[49m│\e[5;1H2\e[5;4H│\e[5;7H\e[39mABC-2\e[5;17Hcurrent\e[5;46H2024-12-07T21:13:07.747961+02:00\e[5;82Hfalse\e[5;95Hd646b36f27\e[5;109H\e[38;2;64;64;64m│\e[6;4H│\e[6;109H│\e[7;4H│\e[7;109H│\e[8;4H│\e[8;109H│\e[9;4H│\e[9;109H│\e[10;4H│\e[10;109H│\e[11;4H│\e[11;109H│\e[12;4H│\e[12;109H│\e[13;4H│\e[13;109H│\e[14;4H│\e[14;109H│\e[15;4H│\e[15;109H│\e[16;4H│\e[16;109H│\e[17;4H│\e[17;109H│\e[18;4H│\e[18;109H│\e[19;4H│\e[19;109H│\e[20;4H│\e[20;109H│\e[21;4H│\e[21;109H│\e[22;4H│\e[22;109H│\e[23;4H│\e[23;109H│\e[24;4H│\e[24;109H│\e[25;4H│\e[25;109H│\e[26;4H│\e[26;109H│\e[27;4H│\e[27;109H│\e[28;4H│\e[28;109H│\e[29;4H│\e[29;109H│\e[30;4H│\e[30;109H│\e[31;4H│\e[31;109H│\e[32;4H│\e[32;109H│\e[33;4H│\e[33;109H│\e[34;4H│\e[34;109H│\e[35;4H│\e[35;109H│\e[36;4H│\e[36;109H│\e[37;4H│\e[37;109H│\e[38;1H───┴────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────\e[39;1H\e[38;2;128;128;128m/Users/jj/.jiralog/worklog.csv [Row 1/2, Col 1/6]\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 254
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 254
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 252
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 251
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 254
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 253
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 253
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 256
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 253
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 253
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 255
+    content: "\e[39m\e[49m\e[59m\e[0m\e[?25l"
+  - delay: 239
+    content: "\e[?25h\e[?1049ljj:~ jj$ "
+  - delay: 1867
+    content: j
+  - delay: 57
+    content: i
+  - delay: 60
+    content: r
+  - delay: 48
+    content: a
+  - delay: 159
+    content: l
+  - delay: 169
+    content: o
+  - delay: 75
+    content: g
+  - delay: 211
+    content: ' '
+  - delay: 112
+    content: c
+  - delay: 105
+    content: o
+  - delay: 61
+    content: m
+  - delay: 182
+    content: m
+  - delay: 40
+    content: i
+  - delay: 133
+    content: t
+  - delay: 472
+    content: "\r\n"
+  - delay: 21
+    content: "\e[?1049h\e[1;39r\e[1;1H\e[J\e[7m  UW PICO 5.09                                                                     New Buffer                                                                       \e[27m\e[38;1H\e[K\e[39;1H\e[K\e[38;1H\e[7m^\e[27m\e[7mG\e[27m Get Help                \e[7m^\e[27m\e[7mO\e[27m WriteOut                \e[7m^\e[27m\e[7mR\e[27m Read File               \e[7m^\e[27m\e[7mY\e[27m Prev Pg                 \e[7m^\e[27m\e[7mK\e[27m Cut Text                \e[7m^\e[27m\e[7mC\e[27m Cur Pos                 \e[K\e[39;1H\e[7m^\e[27m\e[7mX\e[27m Exit                    \e[7m^\e[27m\e[7mJ\e[27m Justify                 \e[7m^\e[27m\e[7mW\e[27m Where is                \e[7m^\e[27m\e[7mV\e[27m Next Pg                 \e[7m^\e[27m\e[7mU\e[27m UnCut Text              \e[7m^\e[27m\e[7mT\e[27m To Spell                \e[K\e[3;1H\e[37;1H                                                                                                                                                                    \e[37;75H\e[7m[ Reading file ]\e[27m\e[37;1H                                                                                                                                                                    \e[37;75H\e[7m[ Read 3 lines ]\e[27m\e[1;1H\e[J\e[7m  UW PICO 5.09                                                      File: /Users/jj/.jiralog/commit_worklog                                                         \e[27m\e[3;1Hticket,time_spent,description,started_date,committed,id\e[4;1HABC-1,1m,,2024-12-07T21:11:44.827321+02:00,false,1467c62b9c\e[5;1HABC-2,0m,,2024-12-07T21:13:07.747961+02:00,false,d646b36f27\e[38;1H\e[K\e[39;1H\e[K\e[38;1H\e[7m^\e[27m\e[7mG\e[27m Get Help                \e[7m^\e[27m\e[7mO\e[27m WriteOut                \e[7m^\e[27m\e[7mR\e[27m Read File               \e[7m^\e[27m\e[7mY\e[27m Prev Pg                 \e[7m^\e[27m\e[7mK\e[27m Cut Text                \e[7m^\e[27m\e[7mC\e[27m Cur Pos                 \e[K\e[39;1H\e[7m^\e[27m\e[7mX\e[27m Exit                    \e[7m^\e[27m\e[7mJ\e[27m Justify                 \e[7m^\e[27m\e[7mW\e[27m Where is                \e[7m^\e[27m\e[7mV\e[27m Next Pg                 \e[7m^\e[27m\e[7mU\e[27m UnCut Text              \e[7m^\e[27m\e[7mT\e[27m To Spell                \e[K\e[3;1H"
+  - delay: 4000
+    content: "\e[38;1H\e[K\e[39;1H\e[K\e[?1049l\e[37m⠁\e[0m ABC-1           [\e[37m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\e[0m] (0/2)                                                          "
+  - delay: 1506
+    content: "\r\e[2K\e[37m⠁\e[0m ABC-1           [\e[37m████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\e[0m] (1/2)                                                          \r\e[2K\e[37m⠁\e[0m ABC-2           [\e[37m████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\e[0m] (1/2)                                                          "
+  - delay: 1510
+    content: "\r\e[2K\e[37m⠉\e[0m ABC-2           [\e[37m████████████████████████████████████████████████████████████████████████████████\e[0m] (2/2)                                                          \r\e[2K\e[92mAll done\e[39m\r\njj:~ jj$ "
+  - delay: 2295
+    content: "logout\r\n"
