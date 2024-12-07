@@ -5,6 +5,8 @@ mod editor;
 
 use chrono::{DateTime, Local, Utc};
 use csvlens::run_csvlens;
+use model::{WorklogMessage, WorklogRecord};
+use worklog::BeginWorklog;
 
 use std::error::Error;
 use inline_colorization::*;
@@ -79,23 +81,41 @@ fn main() {
                 started_date.clone()
                     .map(|v| model::get_started_date(&v))
                     .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
+            ), |added_item| format!(
+                "Added {}: ticket='{}', time spent='{}', started_date={}, description='{}'",
+                added_item.id,
+                added_item.ticket,
+                added_item.time_spent,
+                added_item.started_date,
+                added_item.description,
             ));
         }
         Some(Commands::Rm { id }) => {
-            run(|| worklog::remove(id));
+            run(|| worklog::remove(id), |id| format!("Removed {}", id));
         }
         Some(Commands::Pop {}) => {
-            run(|| worklog::pop());
+            run(
+                || worklog::pop(), 
+                |popped_item| 
+                    popped_item.map(|v| format!(
+                        "Removed {}: ticket='{}', time spent='{}', description='{}'",
+                        v.id,
+                        v.ticket,
+                        v.time_spent,
+                        v.description,
+                    ))
+                    .unwrap_or("Nothing to pop".to_string())
+            );
         }
         Some(Commands::Commit {}) => {
-            run(|| worklog::commit())
+            run_with_default_msg(|| worklog::commit())
         }
         Some(Commands::Current {}) => {
-            run(|| worklog::print_current_ticket());
+            run_with_default_msg(|| worklog::print_current_ticket());
         }
         Some(Commands::Show { stdout }) => {
             if *stdout {
-                run(|| worklog::worklog_to_stdout());
+                run_with_default_msg(|| worklog::worklog_to_stdout());
             } else {
                 match run_csvlens(&[&worklog::worklog_path(), "--delimiter", ","]) {
                     Ok(_) => {},
@@ -104,19 +124,56 @@ fn main() {
             }
         }
         Some(Commands::Begin { ticket, description }) => {
-            run(|| worklog::begin(
-                ticket.to_string(), 
-                description.as_deref().unwrap_or("").to_string()
-            ));
+            let begin_worklog_output = |begin_worklog: BeginWorklog| {
+                match begin_worklog.previous {
+                    Some(previous) => 
+                        format!(
+                            "End {}: time spent='{}', description='{}'\nBegin {}: ticket='{}', description='{}'", 
+                            previous.id,
+                            previous.time_spent, 
+                            previous.description,
+                            begin_worklog.current.id,
+                            begin_worklog.current.ticket,
+                            begin_worklog.current.description
+                        ),
+                    None =>
+                        format!(
+                            "Begin {}: ticket='{}', description='{}'", 
+                            begin_worklog.current.id,
+                            begin_worklog.current.ticket,
+                            begin_worklog.current.description
+                        )
+                }
+            };
+
+            run(
+                || worklog::begin(
+                    ticket.to_string(), 
+                    description.as_deref().unwrap_or("").to_string()
+                ),
+                begin_worklog_output
+            );
         }
         Some(Commands::End {}) => {
-            run(|| worklog::end_current());
+            let end_ouput = |previous: Option<WorklogRecord>| {
+                match previous {
+                    Some(value) => 
+                        format!("End {}: ticket='{}', time spent='{}'", value.id, value.ticket, value.time_spent),
+                    None => 
+                        "Nothing to end".to_string()
+                }
+            };
+
+            run(
+                || worklog::end_current(),
+                end_ouput
+            );
         }
         Some(Commands::Configure { }) => {
-            run(|| worklog::configure())
+            run_with_default_msg(|| worklog::configure())
         }
         Some(Commands::Info { }) => {
-            run(|| worklog::print_info())
+            run_with_default_msg(|| worklog::print_info())
         }
         Some(Commands::Purge { }) => {
 
@@ -125,18 +182,27 @@ fn main() {
     }
 }
 
-fn run<F>(func: F) 
+fn run<F1, F2, T>(op: F1, output_from_ok: F2) 
 where
-    F: FnOnce() -> Result<String, Box<dyn Error>>
+    F1: FnOnce() -> Result<T, Box<dyn Error>>,
+    F2: FnOnce(T) -> String,
 {
-    match func() {
+    match op() {
         Ok(result) => {
-            if result != "" {
-                println!("{color_bright_green}{}{color_reset}", result);
+            let output = output_from_ok(result);
+            if output != "" {
+                println!("{color_bright_green}{}{color_reset}", output);
             }
         }
         Err(e) => {
             eprintln!("{color_bright_red}Error: {}{color_reset}", e);
         }
     }
+}
+
+fn run_with_default_msg<F1>(op: F1) 
+where
+    F1: FnOnce() -> Result<WorklogMessage, Box<dyn Error>>,
+{
+    run(op,|v| v.0);
 }

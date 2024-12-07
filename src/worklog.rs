@@ -6,6 +6,7 @@ use std::error::Error;
 use std::fs::{self, File, OpenOptions};
 use std::io::{stdout, BufRead, Cursor, Seek, Write};
 use std::io::stdin;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
@@ -17,7 +18,7 @@ use std::io::BufReader;
 use inline_colorization::*;
 
 use crate::editor::run_editor;
-use crate::model::{self, WorklogRecord};
+use crate::model::{self, WorklogMessage, WorklogRecord};
 use crate::model::Configuration;
 use crate::jira::validate_jira_time_spent;
 use crate::jira::update_time_spent;
@@ -35,7 +36,7 @@ pub fn worklog_path() -> String {
     get_worklog_path().to_str().expect("No csv path").to_string()
 }
 
-pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<FixedOffset>)  -> Result<String, Box<dyn Error>>  {
+pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<FixedOffset>)  -> Result<WorklogRecord, Box<dyn Error>>  {
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
@@ -61,18 +62,9 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         id: id.clone(),
     };
 
-    writer.serialize(item)?;
+    writer.serialize(item.clone())?;
 
-    let success_message = format!(
-        "Added {}: ticket='{}', time spent='{}', started_date={}, description='{}'",
-        id,
-        ticket,
-        time_spent,
-        started_date,
-        description,
-    );
-
-    Ok(success_message)
+    Ok(item)
 }
 
 pub fn remove(id: &String) -> Result<String, Box<dyn Error>> {
@@ -81,54 +73,43 @@ pub fn remove(id: &String) -> Result<String, Box<dyn Error>> {
         worklog.remove(item_position);
         write_worklog(worklog)?;
 
-        Ok(format!("Removed {}", id))
+        Ok(id.clone())
     } else {
         Err(format!("No worklog item {}", id).into())
     }
 }
 
-pub fn pop() -> Result<String, Box<dyn Error>> {
+pub fn pop() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
 
     let item = worklog.pop();
     write_worklog(worklog)?;
 
-    match item {
-        Some(value) =>
-            Ok(format!(
-                "Removed {}: ticket='{}', time spent='{}', description='{}'",
-                value.id,
-                value.ticket,
-                value.time_spent,
-                value.description,
-            )),
-        None => 
-            Ok("Empty, nothing to pop".to_string())
-    }
-    
+    Ok(item)
 }
 
-pub fn begin(ticket: String, description: String) -> Result<String, Box<dyn Error>> {
+pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dyn Error>> {
     let current_ticket = current_ticket()?;
     end_current()?;
-    add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
+    let added = add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
 
-    if let Some(value) = current_ticket {
-        Ok(format!("Begin [{}], end [{}] with duration={}", ticket, value.ticket, get_current_duration(&value)))
-    } else {
-        Ok(format!("Begin [{}]", ticket))
-    }
+    Ok(
+        BeginWorklog {
+            previous: current_ticket,
+            current: added
+        }
+    )
 }
 
-pub fn print_current_ticket()  -> Result<String, Box<dyn Error>> {
+pub fn print_current_ticket()  -> Result<WorklogMessage, Box<dyn Error>> {
     if let Some(value) = current_ticket()? {
-        Ok(format!("{}", format!("[{}]: duration={}", value.ticket, get_current_duration(&value))))
+        Ok(WorklogMessage(format!("{}", format!("[{}]: duration={}", value.ticket, get_current_duration(&value)))))
     } else {
-        Ok("No current ticket".to_string())    
+        Ok(WorklogMessage("No current ticket".to_string()))    
     }
 }
 
-pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
+pub fn worklog_to_stdout() -> Result<WorklogMessage, Box<dyn Error>> {
     let file = File::open(&get_worklog_path())?;
     let reader = BufReader::new(file);
 
@@ -137,7 +118,7 @@ pub fn worklog_to_stdout() -> Result<String, Box<dyn Error>> {
         println!("{}", v);
     }
 
-    Ok("".to_string())
+    Ok(WorklogMessage("".to_string()))
 }
 
 fn get_current_duration(record: &WorklogRecord) -> String {
@@ -157,15 +138,15 @@ fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     Ok(current)
 }
 
-pub fn end_current() -> Result<String, Box<dyn Error>> {
+pub fn end_current() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
-    let result: Result<String, Box<dyn Error>>;
-    
+    let mut result;
+
     if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "current") {
         item.time_spent = get_current_duration(&item);
-        result = Ok(format!("End [{}]: time spent={}", item.ticket, item.time_spent))
+        result = Ok(Some(item.clone()))
     } else {
-        result = Ok("Nothing to end".to_string())
+        result = Ok(None)
     }
 
     write_worklog(worklog)?;
@@ -207,7 +188,7 @@ fn write_worklog(worklog: Vec<WorklogRecord>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn configure() -> Result<String, Box<dyn Error>> {
+pub fn configure() -> Result<WorklogMessage, Box<dyn Error>> {
     let read_stdin = |msg: String| {
         print!("{}", msg);
         stdout().flush().unwrap();
@@ -239,7 +220,7 @@ pub fn configure() -> Result<String, Box<dyn Error>> {
     let file = File::create(&config_path)?;
     write(BufWriter::new(file), &src_map1)?;
 
-    Ok(format!("All good! Wrote {}/jiralog.properties", jiralog_dir.display()))
+    Ok(WorklogMessage(format!("All good! Wrote {}/jiralog.properties", jiralog_dir.display())))
 }
 
 fn get_config_dir_path() -> PathBuf {
@@ -295,7 +276,7 @@ fn read_config() -> Result<Configuration, Box<dyn Error>> {
     )
 }
 
-pub fn commit() -> Result<String, Box<dyn Error>> {
+pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
     end_current()?;
     let worklog_uncommitted: Vec<WorklogRecord> = read_worklog_uncommitted()?;
 
@@ -303,7 +284,7 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
         let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &CONFIG.get_editor_command(), &get_commit_path())?;
 
         if commit_worklog.is_empty() {
-            return Ok("Abort commit".to_string());
+            return Ok(WorklogMessage("Abort commit".to_string()));
         }
 
         let pb = ProgressBar::new(worklog_uncommitted.len() as u64);
@@ -337,9 +318,9 @@ pub fn commit() -> Result<String, Box<dyn Error>> {
             .iter()
             .try_for_each(update)?;
 
-        Ok("All done".to_string())
+        Ok(WorklogMessage("All done".to_string()))
     } else {
-        Ok("Nothing to commit".to_string())
+        Ok(WorklogMessage("Nothing to commit".to_string()))
     }
 }
 
@@ -354,7 +335,7 @@ pub fn update_item(item: &WorklogRecord) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn print_info() -> Result<String, Box<dyn Error>> {
+pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
     let items = read_worklog()?;
 
     let header = "
@@ -385,5 +366,10 @@ pub fn print_info() -> Result<String, Box<dyn Error>> {
 
     println!("{color_reset}");
 
-    Ok("".to_string())
+    Ok(WorklogMessage("".to_string()))
+}
+
+pub struct BeginWorklog {
+    pub previous: Option<WorklogRecord>,
+    pub current: WorklogRecord
 }

@@ -22,6 +22,8 @@ pub struct Configuration {
     pub editor: Option<String>
 }
 
+pub struct WorklogMessage(pub String);
+
 impl Configuration {
     pub fn get_jira_url(&self) -> String {
         self.jira_cloud_instance
