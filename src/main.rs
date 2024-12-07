@@ -28,7 +28,7 @@ enum Commands {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
-        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'. HH:MM defaults to current day
+        /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'H:MM'. H:MM defaults to current day
         #[arg(short, long)]
         started_date: Option<String>,
         /// Add description for work
