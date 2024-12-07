@@ -28,6 +28,35 @@ Options:
   -V, --version  Print version
 ```
 
+# Configure
+
+Requires Jira api token, username and cloud instance/url to run.
+
+| Property  | Info |
+| ------------- | ------------- |
+| user  | Jira username  |
+| token  | Jira api token  |
+| jira_cloud_instance  | Jira cloud instance id  |
+| jira_url  | Optionally provide url to jira, cloud instance wins if both defined  |
+| editor  | Editor to open worklog on edit, respects `EDITOR` env variable, as a last resort default to `nano`|
+
+## Automatic configuration
+
+Run `jiralog configure` for setup.
+
+## Properties file configuration
+
+Create file `$home/.jiralog/jiralog.properties` with properties.
+
+Example:
+```
+  token=my-token
+  jira_cloud_instance=my-instance
+  user=jj
+  editor=nano
+```
+
+
 # Commands
 
 ## Begin
@@ -74,32 +103,4 @@ Options:
 ```
 jiralog add ABC-2 1d3h
 Added aa08dbe84b: ticket=ABC-2, time spent=1d3h, started_date=2024-12-07 16:00:53.461856 +02:00, description=''
-```
-
-# Configure
-
-Requires Jira api token, username and cloud instance/url to run.
-
-| Property  | Info |
-| ------------- | ------------- |
-| user  | Jira username  |
-| token  | Jira api token  |
-| jira_cloud_instance  | Jira cloud instance id  |
-| jira_url  | Optionally provide url to jira, cloud instance wins if both defined  |
-| editor  | Editor to open worklog on edit, respects `EDITOR` env variable, as a last resort default to `nano`|
-
-## Automatic configuration
-
-Run `jiralog configure` for setup.
-
-## Properties file configuration
-
-Create file `$home/.jiralog/jiralog.properties` with properties.
-
-Example:
-```
-  token=my-token
-  jira_cloud_instance=my-instance
-  user=jj
-  editor=nano
 ```
