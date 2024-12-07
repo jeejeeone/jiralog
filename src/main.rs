@@ -26,7 +26,6 @@ enum Commands {
         ticket: String,
         /// Time spent in Jira format, for example 1d5h
         time_spent: String,
-        // TODO: make tz configurable
         /// Provide start date for work item in format 'YYYY-MM-DDTHH:MM' or 'HH:MM'
         #[arg(short, long)]
         started_date: Option<String>,
@@ -37,7 +36,7 @@ enum Commands {
     /// Remove work item
     Rm {
         /// Item to remove
-        item_index: u64,
+        id: String,
     },
     /// Remove latest work item
     Pop {},
@@ -52,9 +51,9 @@ enum Commands {
     End { },
     /// Print current work item
     Current {},
-    /// Record worklog to Jira, removes successfully recorded items
+    /// Commit worklog to Jira
     Commit {},
-    /// Remove committed entries
+    /// Remove committed entries from worklog
     Purge {},
     /// Show worklog using terminal ui
     Show {
@@ -82,7 +81,7 @@ fn main() {
                     .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
             ));
         }
-        Some(Commands::Rm { item_index }) => {
+        Some(Commands::Rm { id }) => {
             run(|| worklog::remove(**&item_index as usize - 1));
         }
         Some(Commands::Pop {}) => {

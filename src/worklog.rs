@@ -72,21 +72,15 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     Ok(success_message)
 }
 
-pub fn remove(index: usize) -> Result<String, Box<dyn Error>> {
+pub fn remove(id: String) -> Result<String, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
-    if index < worklog.len() {
-        let item = worklog.remove(index);  
+    if let Some(item_position) = worklog.iter().position(|v| v.id == id) {
+        worklog.remove(item_position);
         write_worklog(worklog)?;
-        let success_message = format!(
-            "Removed [{}]: time spent='{}', description='{}'",
-            item.ticket,
-            item.time_spent,
-            item.description,
-        );
-    
-        Ok(success_message)
+
+        Ok(format!("Removed {}", id))
     } else {
-        Ok("Nothing to remove".to_string())   
+        Err(format!("No worklog item {}", id).into())
     }
 }
 
