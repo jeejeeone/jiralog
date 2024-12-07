@@ -95,7 +95,7 @@ fn main() {
         }
         Some(Commands::Pop {}) => {
             run(
-                || worklog::pop(), 
+                worklog::pop, 
                 |popped_item| 
                     popped_item.map(|v| format!(
                         "Removed {}: ticket='{}', time spent='{}', description='{}'",
@@ -108,16 +108,16 @@ fn main() {
             );
         }
         Some(Commands::Commit {}) => {
-            run_with_default_msg(|| worklog::commit())
+            run_with_default_msg(worklog::commit)
         }
         Some(Commands::Current {}) => {
-            run_with_default_msg(|| worklog::print_current_ticket());
+            run_with_default_msg(worklog::print_current_ticket);
         }
         Some(Commands::Show { stdout }) => {
             if *stdout {
-                run_with_default_msg(|| worklog::worklog_to_stdout());
+                run_with_default_msg(worklog::worklog_to_stdout);
             } else {
-                match run_csvlens(&[&worklog::worklog_path(), "--delimiter", ","]) {
+                match run_csvlens([&worklog::worklog_path(), "--delimiter", ","]) {
                     Ok(_) => {},
                     Err(e) => eprintln!("Error: {:?}", e),
                 }
@@ -165,18 +165,18 @@ fn main() {
             };
 
             run(
-                || worklog::end_current(),
+                worklog::end_current,
                 end_ouput
             );
         }
         Some(Commands::Configure { }) => {
-            run_with_default_msg(|| worklog::configure())
+            run_with_default_msg(worklog::configure)
         }
         Some(Commands::Info { }) => {
-            run_with_default_msg(|| worklog::print_info())
+            run_with_default_msg(worklog::print_info)
         }
         Some(Commands::Purge { }) => {
-            run(|| worklog::purge(), |removed_count| format!("Removed {} items", removed_count))
+            run(worklog::purge, |removed_count| format!("Removed {} items", removed_count))
         }
         None => {}
     }
@@ -190,7 +190,7 @@ where
     match op() {
         Ok(result) => {
             let output = output_from_ok(result);
-            if output != "" {
+            if !output.is_empty() {
                 println!("{color_bright_green}{}{color_reset}", output);
             }
         }

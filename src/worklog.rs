@@ -8,7 +8,6 @@ use std::io::stdin;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-use dirs;
 use java_properties::write;
 use std::io::BufWriter;
 use java_properties::read;
@@ -38,7 +37,7 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
-        .write(true)
+        
         .create(true)
         .append(true)
         .open(get_worklog_path())
@@ -55,7 +54,7 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         ticket: ticket.clone(),
         time_spent: time_spent.clone(),
         description: description.clone(),
-        started_date: started_date,
+        started_date,
         committed: false,
         id: id.clone(),
     };
@@ -101,14 +100,14 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
 
 pub fn print_current_ticket()  -> Result<WorklogMessage, Box<dyn Error>> {
     if let Some(value) = current_ticket()? {
-        Ok(WorklogMessage(format!("{}", format!("[{}]: duration={}", value.ticket, get_current_duration(&value)))))
+        Ok(WorklogMessage(format!("[{}]: duration={}", value.ticket, get_current_duration(&value)).to_string()))
     } else {
         Ok(WorklogMessage("No current ticket".to_string()))    
     }
 }
 
 pub fn worklog_to_stdout() -> Result<WorklogMessage, Box<dyn Error>> {
-    let file = File::open(&get_worklog_path())?;
+    let file = File::open(get_worklog_path())?;
     let reader = BufReader::new(file);
 
     for line in reader.lines() {
@@ -129,19 +128,17 @@ fn get_current_duration(record: &WorklogRecord) -> String {
 
 fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let current = read_worklog()?
-        .into_iter()
-        .filter(|item| item.time_spent == "current")
-        .next();
+        .into_iter().find(|item| item.time_spent == "current");
         
     Ok(current)
 }
 
 pub fn end_current() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
-    let mut result;
+    let result;
 
     if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "current") {
-        item.time_spent = get_current_duration(&item);
+        item.time_spent = get_current_duration(item);
         result = Ok(Some(item.clone()))
     } else {
         result = Ok(None)
@@ -254,7 +251,7 @@ fn get_commit_path() -> PathBuf {
 }
 
 fn read_config() -> Result<Configuration, Box<dyn Error>> {
-    let mut config = File::open(get_config_path())?;
+    let config = File::open(get_config_path())?;
     let config_map = read(BufReader::new(config))?;
     
     let token = config_map.get("token").expect("No token found");
@@ -349,16 +346,16 @@ pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
     
     println!("Jiralog home: 
     {}", get_config_dir_path().display());
-    println!("");
+    println!();
 
     println!("Configuration: 
     {}", get_config_path().display());
-    println!("");
+    println!();
     
     println!("Worklog: 
     {}", get_worklog_path().display());
 
-    println!("");
+    println!();
 
     println!("Total items {}, uncommitted items {}", items.len(), 0);
 
