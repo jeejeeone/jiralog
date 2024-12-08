@@ -35,7 +35,6 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
-        
         .create(true)
         .append(true)
         .open(get_worklog_path())
@@ -49,15 +48,15 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
     let id = model::get_nano_id();
     
     let item = WorklogRecord {
-        ticket: ticket.clone(),
-        time_spent: time_spent.clone(),
-        description: description.clone(),
-        started_date,
+        ticket: ticket,
+        time_spent: time_spent,
+        description: description,
+        started_date: started_date,
         committed: false,
-        id: id.clone(),
+        id: id,
     };
 
-    writer.serialize(item.clone())?;
+    writer.serialize(&item)?;
 
     Ok(item)
 }
@@ -84,11 +83,10 @@ pub fn pop() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
 }
 
 pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dyn Error>> {
-    let current_ticket_id = 
-    current_ticket()?
-    .map(|v| v.id);
+    let current_ticket_id = current_ticket()?.map(|v| v.id);
 
     end_current()?;
+    
     let added = add(ticket.clone(), CURRENT_MARKER.clone(), description.clone(), Local::now().fixed_offset())?;
 
     let previous = 
