@@ -31,15 +31,18 @@ Options:
 ## Workflow
 
 **Record time while you go**
-Note! commit ends current work
+
+> Note! commit ends current work
 ```
 jj@jj worklog % jiralog begin ABC-1
 Begin d32e8c4df9: ticket=ABC-1
 
-jj@jj worklog % jiralog begin ABC-2 # Record time automatically to ABC-1
+jj@jj worklog % jiralog begin ABC-2 # Ends work for ABC-1, add duration automatically
 End d32e8c4df9: ticket=ABC-1, time spent=5m
 
 Begin e3a238906f: ticket=ABC-2
+jj@jj ~ % jiralog end
+End e3a238906f: ticket=ABC-2, time spent=1m # Stop current work, add duration. Note! Commit also ends current work
 ```
 
 **Add worklog items**
