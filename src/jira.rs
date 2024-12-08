@@ -8,7 +8,7 @@ pub fn update_time_spent(
     user: &str,
     api_token: &str,
     worklog: &WorklogRecord,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<(), Box<dyn Error>> {
     let client = reqwest::blocking::Client::new();
     let url = format!("{}/rest/api/3/issue/{}/worklog", jira_url, worklog.ticket);
 
@@ -26,11 +26,13 @@ pub fn update_time_spent(
         .send();
 
     match response {
-        Ok(resp) => println!("Request succeeded with status: {}", resp.status()),
-        Err(err) => println!("Request failed with error: {}", err),
+        Ok(resp) if resp.status() == 201 => 
+            Ok(()),
+        Ok(resp) => 
+            Err(format!("Update failed with status: {}", resp.status()).into()),  
+        Err(err) => 
+            Err(format!("Request failed with error: {}", err).into())
     }
-
-    Ok("".to_string())
 }
 
 pub fn validate_jira_time_spent(input: &str) -> Result<(), Box<dyn Error>> {

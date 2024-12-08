@@ -59,7 +59,7 @@ pub fn get_started_date(started_date: &str) -> Result<DateTime<FixedOffset>, Str
                 .single()
                 .ok_or_else(|| "Ambiguous or invalid datetime".to_string())
         }
-        Err(_) => Err("Invalid format. Use 'YYYY-MM-DDTHH:MM' or 'HH:MM'.".to_string())
+        Err(_) => Err("Invalid started date, use 'YYYY-MM-DDTHH:MM' or 'H:M'.".to_string())
     }
 }
 

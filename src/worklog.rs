@@ -108,7 +108,7 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
 
 pub fn print_current_ticket()  -> Result<WorklogMessage, Box<dyn Error>> {
     if let Some(value) = current_ticket()? {
-        Ok(WorklogMessage(format!("[{}]: duration={}", value.ticket, get_current_duration(&value)).to_string()))
+        Ok(WorklogMessage(format!("[{}]: time spent={}", value.ticket, get_current_duration(&value)).to_string()))
     } else {
         Ok(WorklogMessage("No current ticket".to_string()))    
     }
@@ -223,68 +223,15 @@ pub fn configure() -> Result<WorklogMessage, Box<dyn Error>> {
 
     let config_path = get_config_path();
 
-    let mut src_map1 = HashMap::new();
-    src_map1.insert("token".to_string(), token);
-    src_map1.insert("jira_cloud_instance".to_string(), instance);
-    src_map1.insert("user".to_string(), user);
+    let mut config_map = HashMap::new();
+    config_map.insert("token".to_string(), token);
+    config_map.insert("jira_cloud_instance".to_string(), instance);
+    config_map.insert("user".to_string(), user);
 
     let file = File::create(&config_path)?;
-    write(BufWriter::new(file), &src_map1)?;
+    write(BufWriter::new(file), &config_map)?;
 
     Ok(WorklogMessage(format!("All good! Wrote {}/jiralog.properties", jiralog_dir.display())))
-}
-
-fn get_config_dir_path() -> PathBuf {
-    let home_dir = dirs::home_dir().expect("Could not locate home directory");
-    
-    let mut jiralog_dir = PathBuf::from(&home_dir);
-    jiralog_dir.push(".jiralog");
-
-    jiralog_dir
-}
-
-fn get_config_path() -> PathBuf {
-    let jiralog_dir = get_config_dir_path();
-
-    let mut config_path = PathBuf::from(&jiralog_dir);
-    config_path.push("jiralog.properties"); 
-
-    config_path
-}
-
-fn get_worklog_path() -> PathBuf {
-    let mut config_dir = get_config_dir_path();
-    config_dir.push(WORKLOG_FILE);
-    
-    config_dir
-}
-
-fn get_commit_path() -> PathBuf {
-    let mut config_dir = get_config_dir_path();
-    config_dir.push(COMMIT_FILE);
-    
-    config_dir
-}
-
-fn read_config() -> Result<Configuration, Box<dyn Error>> {
-    let config = File::open(get_config_path())?;
-    let config_map = read(BufReader::new(config))?;
-    
-    let token = config_map.get("token").expect("No token found");
-    let jira_url = config_map.get("jira_url");
-    let jira_cloud_instance = config_map.get("jira_cloud_instance");
-    let user = config_map.get("user").expect("User not configured");
-    let editor = config_map.get("editor");
-
-    Ok(
-        Configuration {
-            token: token.to_string(), 
-            jira_url: jira_url.cloned(), 
-            jira_cloud_instance: jira_cloud_instance.cloned(), 
-            user: user.to_string(),
-            editor: editor.cloned(),
-        }
-    )
 }
 
 pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
@@ -346,6 +293,7 @@ pub fn update_item(item: &WorklogRecord) -> Result<(), Box<dyn Error>> {
 
 pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
     let items = read_worklog()?;
+    let uncommitted_items = read_worklog_uncommitted()?;
 
     let header = "
      ____.__              .__                 
@@ -371,20 +319,11 @@ pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
 
     println!();
 
-    println!("Total items {}, uncommitted items {}", items.len(), 0);
+    println!("Total items {}, uncommitted items {}", items.len(), uncommitted_items.len());
 
     println!("{color_reset}");
 
     empty_ok()
-}
-
-pub struct BeginWorklog {
-    pub previous: Option<WorklogRecord>,
-    pub current: WorklogRecord
-}
-
-fn empty_ok() -> Result<WorklogMessage, Box<dyn Error>> {
-    Ok(WorklogMessage("".to_string()))
 }
 
 pub fn purge() -> Result<usize, Box<dyn Error>> {
@@ -396,4 +335,66 @@ pub fn purge() -> Result<usize, Box<dyn Error>> {
     write_worklog(uncommitted)?;
 
     Ok(worklog.len() - uncommitted_length)
+}
+
+fn empty_ok() -> Result<WorklogMessage, Box<dyn Error>> {
+    Ok(WorklogMessage("".to_string()))
+}
+
+fn get_config_dir_path() -> PathBuf {
+    let home_dir = dirs::home_dir().expect("Could not locate home directory");
+    
+    let mut jiralog_dir = PathBuf::from(&home_dir);
+    jiralog_dir.push(".jiralog");
+
+    jiralog_dir
+}
+
+fn get_config_path() -> PathBuf {
+    let jiralog_dir = get_config_dir_path();
+
+    let mut config_path = PathBuf::from(&jiralog_dir);
+    config_path.push("jiralog.properties"); 
+
+    config_path
+}
+
+fn get_worklog_path() -> PathBuf {
+    let mut config_dir = get_config_dir_path();
+    config_dir.push(WORKLOG_FILE);
+    
+    config_dir
+}
+
+fn get_commit_path() -> PathBuf {
+    let mut config_dir = get_config_dir_path();
+    config_dir.push(COMMIT_FILE);
+    
+    config_dir
+}
+
+fn read_config() -> Result<Configuration, Box<dyn Error>> {
+    let config = File::open(get_config_path())?;
+    let config_map = read(BufReader::new(config))?;
+    
+    let token = config_map.get("token").expect("No token found");
+    let jira_url = config_map.get("jira_url");
+    let jira_cloud_instance = config_map.get("jira_cloud_instance");
+    let user = config_map.get("user").expect("User not configured");
+    let editor = config_map.get("editor");
+
+    Ok(
+        Configuration {
+            token: token.to_string(), 
+            jira_url: jira_url.cloned(), 
+            jira_cloud_instance: jira_cloud_instance.cloned(), 
+            user: user.to_string(),
+            editor: editor.cloned(),
+        }
+    )
+}
+
+pub struct BeginWorklog {
+    pub previous: Option<WorklogRecord>,
+    pub current: WorklogRecord
 }
