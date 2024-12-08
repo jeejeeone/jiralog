@@ -11,6 +11,7 @@ use std::io::BufWriter;
 use java_properties::read;
 use std::io::BufReader;
 use inline_colorization::*;
+use lazy_static::lazy_static;
 
 use crate::editor::run_editor;
 use crate::model::{self, WorklogMessage, WorklogRecord};
@@ -21,10 +22,9 @@ use crate::jira::update_time_spent;
 static WORKLOG_FILE: &str = "worklog.csv";
 static COMMIT_FILE: &str = "commit_worklog";
 
-use lazy_static::lazy_static;
-
 lazy_static! {
     static ref CONFIG: Configuration = read_config().expect("Unable to load configuration");
+    static ref CURRENT_MARKER: String = "current".to_string();
 }
 
 pub fn worklog_path() -> String {
@@ -89,7 +89,7 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
     .map(|v| v.id);
 
     end_current()?;
-    let added = add(ticket.clone(), "current".to_string(), description.clone(), Local::now().fixed_offset())?;
+    let added = add(ticket.clone(), CURRENT_MARKER.clone(), description.clone(), Local::now().fixed_offset())?;
 
     let previous = 
         if current_ticket_id.is_some() {
@@ -100,8 +100,8 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
 
     Ok(
         BeginWorklog {
-            previous,
-            current: added
+            previous: previous,
+            current: added,
         }
     )
 }
@@ -136,7 +136,7 @@ fn get_current_duration(record: &WorklogRecord) -> String {
 
 fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let current = read_worklog()?
-        .into_iter().find(|item| item.time_spent == "current");
+        .into_iter().find(|item| item.time_spent == *CURRENT_MARKER);
         
     Ok(current)
 }
@@ -145,7 +145,7 @@ pub fn end_current() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
     let result;
 
-    if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == "current") {
+    if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == *CURRENT_MARKER) {
         item.time_spent = get_current_duration(item);
         
         result = Ok(Some(item.clone()))
@@ -204,9 +204,9 @@ pub fn configure() -> Result<WorklogMessage, Box<dyn Error>> {
         print!("{}", msg);
         stdout().flush().unwrap();
 
-        let mut input = String::new(); // Create a mutable String to store the input
+        let mut input = String::new();
         stdin()
-            .read_line(&mut input) // Read a line of input into the String
+            .read_line(&mut input)
             .expect("Failed to read line");
         input.trim_end().to_string()
     };
