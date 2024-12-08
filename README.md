@@ -41,8 +41,9 @@ jj@jj worklog % jiralog begin ABC-2 # Ends work for ABC-1, add duration automati
 End d32e8c4df9: ticket=ABC-1, time spent=5m
 
 Begin e3a238906f: ticket=ABC-2
-jj@jj ~ % jiralog end
-End e3a238906f: ticket=ABC-2, time spent=1m # Stop current work, add duration. Note! Commit also ends current work
+
+jj@jj ~ % jiralog end # Stop current work, adds duration. Note! Commit also ends current work
+End e3a238906f: ticket=ABC-2, time spent=1m 
 ```
 
 **Add worklog items**
