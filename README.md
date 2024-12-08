@@ -18,7 +18,7 @@ Commands:
   current    Print current work item
   commit     Commit worklog to Jira
   purge      Remove committed entries from worklog
-  show       Show worklog using csvlens, optionally to stdout
+  show       Show worklog in explorer tui, optionally to stdout
   configure  Configure jiralog
   info       Print info
   help       Print this message or the help of the given subcommand(s)
@@ -81,7 +81,7 @@ Removed 7 items
 **Explore worklog items**
 
 ```
-# Explore items with csvlens
+# Explore items with explorer tui
 jj@jj worklog % jiralog show
 
 # Items to stdout

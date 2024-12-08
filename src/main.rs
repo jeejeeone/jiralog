@@ -57,7 +57,7 @@ enum Commands {
     Commit {},
     /// Remove committed entries from worklog
     Purge {},
-    /// Show worklog using csvlens, optionally to stdout
+    /// Show worklog in explorer tui, optionally to stdout
     Show {
         /// Output worklog to stdout
         #[arg(short, long)]
