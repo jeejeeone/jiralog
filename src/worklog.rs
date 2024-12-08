@@ -100,7 +100,7 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
 
     Ok(
         BeginWorklog {
-            previous: previous,
+            previous,
             current: added,
         }
     )
