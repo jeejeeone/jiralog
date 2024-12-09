@@ -124,7 +124,7 @@ Example:
 
 # Hook current work item into your favourite prompt
 
-Use `jiralog current -f [format]`. For example p10k
+Use `jiralog current -f [format]` for prompt output. For example p10k
 
 Prompt output:
 
