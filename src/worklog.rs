@@ -104,11 +104,21 @@ pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dy
     )
 }
 
-pub fn print_current_ticket()  -> Result<WorklogMessage, Box<dyn Error>> {
+pub fn print_current_ticket(format: &Option<String>)  -> Result<WorklogMessage, Box<dyn Error>> {
     if let Some(value) = current_ticket()? {
-        Ok(WorklogMessage(format!("[{}]: time spent={}", value.ticket, get_current_duration(&value)).to_string()))
-    } else {
+        let print_format =
+            format.clone().unwrap_or("[%ti]: time spent=%ts".to_string());
+
+        let msg = print_format
+            .replace("%ti", &value.ticket)
+            .replace("%d", &value.description)
+            .replace("%ts", &get_current_duration(&value));
+
+        Ok(WorklogMessage(msg))
+    } else if format.is_none() {
         Ok(WorklogMessage("No current ticket".to_string()))    
+    } else {
+        empty_ok()
     }
 }
 

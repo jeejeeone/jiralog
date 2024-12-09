@@ -52,7 +52,11 @@ enum Commands {
     /// End current work
     End { },
     /// Print current work item
-    Current {},
+    Current {
+        /// Output format, ticket %ti, description %d, time spent %ts. Empty if current unavailable. For example -of "[%ti]"
+        #[arg(short, long)]
+        format: Option<String>
+    },
     /// Commit worklog to Jira
     Commit {},
     /// Remove committed entries from worklog
@@ -108,10 +112,14 @@ fn main() {
             );
         }
         Some(Commands::Commit {}) => {
-            run_with_default_msg(worklog::commit)
+            run_with_default_msg(worklog::commit);
         }
-        Some(Commands::Current {}) => {
-            run_with_default_msg(worklog::print_current_ticket);
+        Some(Commands::Current { format }) => {
+            if format.is_some() {
+                run_with_default_plain(|| worklog::print_current_ticket(format));
+            } else {
+                run_with_default_msg(|| worklog::print_current_ticket(format));
+            }
         }
         Some(Commands::Show { stdout }) => {
             if *stdout {
@@ -128,18 +136,21 @@ fn main() {
                 match begin_worklog.previous {
                     Some(previous) => 
                         format!(
-                            "End {}: ticket={}, time spent={}\n\nBegin {}: ticket={}", 
+                            "End {}: ticket={}, time spent={}, description={}\n\nBegin {}: ticket={}, description={}",
                             previous.id,
                             previous.ticket,
-                            previous.time_spent, 
+                            previous.time_spent,
+                            previous.description,
                             begin_worklog.current.id,
                             begin_worklog.current.ticket,
+                            begin_worklog.current.description,
                         ),
                     None =>
                         format!(
-                            "Begin {}: ticket={}", 
+                            "Begin {}: ticket={}, description={}",
                             begin_worklog.current.id,
                             begin_worklog.current.ticket,
+                            begin_worklog.current.description,
                         )
                 }
             };
@@ -156,7 +167,13 @@ fn main() {
             let end_ouput = |previous: Option<WorklogRecord>| {
                 match previous {
                     Some(value) => 
-                        format!("End {}: ticket={}, time spent={}", value.id, value.ticket, value.time_spent),
+                        format!(
+                            "End {}: ticket={}, time spent={}, description={}",
+                            value.id,
+                            value.ticket,
+                            value.time_spent,
+                            value.description
+                        ),
                     None => 
                         "Nothing to end".to_string()
                 }
@@ -168,19 +185,27 @@ fn main() {
             );
         }
         Some(Commands::Configure { }) => {
-            run_with_default_msg(worklog::configure)
+            run_with_default_msg(worklog::configure);
         }
         Some(Commands::Info { }) => {
-            run_with_default_msg(worklog::print_info)
+            run_with_default_msg(worklog::print_info);
         }
         Some(Commands::Purge { }) => {
-            run(worklog::purge, |removed_count| format!("Removed {} items", removed_count))
+            run(worklog::purge, |removed_count| format!("Removed {} items", removed_count));
         }
         None => {}
     }
 }
 
-fn run<F1, F2, T>(op: F1, output_from_ok: F2) 
+fn run<F1, F2, T>(op: F1, output_from_ok: F2)
+where
+    F1: FnOnce() -> Result<T, Box<dyn Error>>,
+    F2: FnOnce(T) -> String,
+{
+    run_impl(op, output_from_ok, false)
+}
+
+fn run_impl<F1, F2, T>(op: F1, output_from_ok: F2, plain_output: bool)
 where
     F1: FnOnce() -> Result<T, Box<dyn Error>>,
     F2: FnOnce(T) -> String,
@@ -188,8 +213,10 @@ where
     match op() {
         Ok(result) => {
             let output = output_from_ok(result);
-            if !output.is_empty() {
+            if !output.is_empty() && !plain_output {
                 println!("{color_bright_green}{}{color_reset}", output);
+            } else if !output.is_empty() && plain_output {
+                print!("{}", output);
             }
         }
         Err(e) => {
@@ -202,5 +229,12 @@ fn run_with_default_msg<F1>(op: F1)
 where
     F1: FnOnce() -> Result<WorklogMessage, Box<dyn Error>>,
 {
-    run(op,|v| v.0);
+    run(op,|v| v.0)
+}
+
+fn run_with_default_plain<F1>(op: F1)
+where
+    F1: FnOnce() -> Result<WorklogMessage, Box<dyn Error>>,
+{
+    run_impl(op, |v| v.0, true)
 }
