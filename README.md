@@ -121,3 +121,21 @@ Example:
   user=jj
   editor=nano
 ```
+
+# Hook current work item into your favourite prompt
+
+Use `jiralog current -f [format]`. For example p10k
+
+Prompt output:
+
+```
+  function prompt_jiralog() {
+    current=$(jiralog current -f "%ti")
+    p10k segment -f 002 -t "$current"
+  }
+```
+
+Add `jiralog` to `POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS`.
+
+![jiralog-prompt2](https://github.com/user-attachments/assets/d7b200bb-42e4-47b0-9885-3abb7cd443a3)
+
