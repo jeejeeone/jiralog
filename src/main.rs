@@ -76,13 +76,13 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
 
-    match &cli.command {
+    match cli.command {
         Some(Commands::Add { ticket, time_spent, description , started_date}) => {
             run(|| worklog::add(
-                ticket.to_string(), 
-                time_spent.to_string(), 
-                description.as_deref().unwrap_or("").to_string(),
-                started_date.clone()
+            ticket.clone(), 
+                time_spent, 
+                description.unwrap_or("".to_string()),
+                started_date
                     .map(|v| model::get_started_date(&v))
                     .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
             ), |added_item| format!(
@@ -95,7 +95,7 @@ fn main() {
             ));
         }
         Some(Commands::Rm { id }) => {
-            run(|| worklog::remove(id), |id| format!("Removed {}", id));
+            run(|| worklog::remove(&id), |id| format!("Removed {}", id));
         }
         Some(Commands::Pop {}) => {
             run(
@@ -116,13 +116,13 @@ fn main() {
         }
         Some(Commands::Current { format }) => {
             if format.is_some() {
-                run_with_default_plain(|| worklog::print_current_ticket(format));
+                run_with_default_plain(|| worklog::print_current_ticket(&format));
             } else {
-                run_with_default_msg(|| worklog::print_current_ticket(format));
+                run_with_default_msg(|| worklog::print_current_ticket(&format));
             }
         }
         Some(Commands::Show { stdout }) => {
-            if *stdout {
+            if stdout {
                 run_with_default_msg(worklog::worklog_to_stdout);
             } else {
                 match run_csvlens([&worklog::worklog_path(), "--delimiter", ","]) {
