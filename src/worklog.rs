@@ -1,23 +1,23 @@
 use chrono::{DateTime, FixedOffset, Local, Utc};
 use indicatif::{ProgressBar, ProgressStyle};
+use inline_colorization::*;
+use java_properties::read;
+use java_properties::write;
+use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File, OpenOptions};
-use std::io::{stdout, BufRead, Cursor, Seek, Write};
 use std::io::stdin;
-use std::path::PathBuf;
-use java_properties::write;
-use std::io::BufWriter;
-use java_properties::read;
 use std::io::BufReader;
-use inline_colorization::*;
-use lazy_static::lazy_static;
+use std::io::BufWriter;
+use std::io::{stdout, BufRead, Cursor, Seek, Write};
+use std::path::PathBuf;
 
 use crate::editor::run_editor;
-use crate::model::{self, WorklogMessage, WorklogRecord};
-use crate::model::Configuration;
-use crate::jira::validate_jira_time_spent;
 use crate::jira::update_time_spent;
+use crate::jira::validate_jira_time_spent;
+use crate::model::Configuration;
+use crate::model::{self, WorklogMessage, WorklogRecord};
 
 static WORKLOG_FILE: &str = "worklog.csv";
 static COMMIT_FILE: &str = "commit_worklog";
@@ -28,10 +28,18 @@ lazy_static! {
 }
 
 pub fn worklog_path() -> String {
-    get_worklog_path().to_str().expect("No csv path").to_string()
+    get_worklog_path()
+        .to_str()
+        .expect("No csv path")
+        .to_string()
 }
 
-pub fn add(ticket: String, time_spent: String, description: String, started_date: DateTime<FixedOffset>)  -> Result<WorklogRecord, Box<dyn Error>>  {
+pub fn add(
+    ticket: &String,
+    time_spent: &String,
+    description: &String,
+    started_date: &DateTime<FixedOffset>,
+) -> Result<WorklogRecord, Box<dyn Error>> {
     validate_jira_time_spent(&time_spent)?;
 
     let mut file = OpenOptions::new()
@@ -46,14 +54,14 @@ pub fn add(ticket: String, time_spent: String, description: String, started_date
         .from_writer(file);
 
     let id = model::get_nano_id();
-    
+
     let item = WorklogRecord {
-        ticket: ticket,
-        time_spent: time_spent,
-        description: description,
-        started_date: started_date,
+        ticket: ticket.clone(),
+        time_spent: time_spent.clone(),
+        description: description.clone(),
+        started_date: started_date.clone(),
         committed: false,
-        id: id,
+        id: id.clone(),
     };
 
     writer.serialize(&item)?;
@@ -82,32 +90,31 @@ pub fn pop() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     Ok(item)
 }
 
-pub fn begin(ticket: String, description: String) -> Result<BeginWorklog, Box<dyn Error>> {
+pub fn begin(ticket: &String, description: &String) -> Result<BeginWorklog, Box<dyn Error>> {
     let current_ticket_id = current_ticket()?.map(|v| v.id);
 
     end_current()?;
-    
-    let added = add(ticket.clone(), CURRENT_MARKER.clone(), description.clone(), Local::now().fixed_offset())?;
 
-    let previous = 
-        if current_ticket_id.is_some() {
-            find_item(current_ticket_id.unwrap())?
-        } else {
-            None
-        };
+    let added = add(
+        ticket,
+        &CURRENT_MARKER,
+        description,
+        &Local::now().fixed_offset(),
+    )?;
 
-    Ok(
-        BeginWorklog {
-            previous,
-            current: added,
-        }
-    )
+    let previous = current_ticket_id.map(find_item).transpose()?.flatten();
+
+    Ok(BeginWorklog {
+        previous,
+        current: added,
+    })
 }
 
-pub fn print_current_ticket(format: &Option<String>)  -> Result<WorklogMessage, Box<dyn Error>> {
+pub fn print_current_ticket(format: &Option<String>) -> Result<WorklogMessage, Box<dyn Error>> {
     if let Some(value) = current_ticket()? {
-        let print_format =
-            format.clone().unwrap_or("[%ti]: time spent=%ts".to_string());
+        let print_format = format
+            .clone()
+            .unwrap_or("[%ti]: time spent=%ts".to_string());
 
         let msg = print_format
             .replace("%ti", &value.ticket)
@@ -116,7 +123,7 @@ pub fn print_current_ticket(format: &Option<String>)  -> Result<WorklogMessage, 
 
         Ok(WorklogMessage(msg))
     } else if format.is_none() {
-        Ok(WorklogMessage("No current ticket".to_string()))    
+        Ok(WorklogMessage("No current ticket".to_string()))
     } else {
         empty_ok()
     }
@@ -144,8 +151,9 @@ fn get_current_duration(record: &WorklogRecord) -> String {
 
 fn current_ticket() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let current = read_worklog()?
-        .into_iter().find(|item| item.time_spent == *CURRENT_MARKER);
-        
+        .into_iter()
+        .find(|item| item.time_spent == *CURRENT_MARKER);
+
     Ok(current)
 }
 
@@ -153,9 +161,12 @@ pub fn end_current() -> Result<Option<WorklogRecord>, Box<dyn Error>> {
     let mut worklog = read_worklog()?;
     let result;
 
-    if let Some(item) = worklog.iter_mut().find(|record| record.time_spent == *CURRENT_MARKER) {
+    if let Some(item) = worklog
+        .iter_mut()
+        .find(|record| record.time_spent == *CURRENT_MARKER)
+    {
         item.time_spent = get_current_duration(item);
-        
+
         result = Ok(Some(item.clone()))
     } else {
         result = Ok(None)
@@ -170,10 +181,8 @@ fn read_worklog() -> Result<Vec<WorklogRecord>, Box<dyn Error>> {
     if let Ok(file) = File::open(worklog_path()) {
         let mut rdr = csv::Reader::from_reader(file);
 
-        let worklog_records: Vec<WorklogRecord> = rdr
-            .deserialize()
-            .collect::<Result<_, _>>()?;
-        
+        let worklog_records: Vec<WorklogRecord> = rdr.deserialize().collect::<Result<_, _>>()?;
+
         Ok(worklog_records)
     } else {
         Ok(Vec::new())
@@ -213,16 +222,14 @@ pub fn configure() -> Result<WorklogMessage, Box<dyn Error>> {
         stdout().flush().unwrap();
 
         let mut input = String::new();
-        stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
+        stdin().read_line(&mut input).expect("Failed to read line");
         input.trim_end().to_string()
     };
 
     let user = read_stdin("Enter Jira user: ".to_string());
     let token = read_stdin("Enter Jira token: ".to_string());
     let instance = read_stdin("Enter Jira cloud instance: ".to_string());
-    
+
     let jiralog_dir = get_config_dir_path();
 
     if !jiralog_dir.exists() {
@@ -239,7 +246,10 @@ pub fn configure() -> Result<WorklogMessage, Box<dyn Error>> {
     let file = File::create(&config_path)?;
     write(BufWriter::new(file), &config_map)?;
 
-    Ok(WorklogMessage(format!("All good! Wrote {}/jiralog.properties", jiralog_dir.display())))
+    Ok(WorklogMessage(format!(
+        "All good! Wrote {}/jiralog.properties",
+        jiralog_dir.display()
+    )))
 }
 
 pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
@@ -247,7 +257,11 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
     let worklog_uncommitted: Vec<WorklogRecord> = read_worklog_uncommitted()?;
 
     if !worklog_uncommitted.is_empty() {
-        let commit_worklog = run_editor(worklog_uncommitted.iter().collect(), &CONFIG.get_editor_command(), &get_commit_path())?;
+        let commit_worklog = run_editor(
+            worklog_uncommitted.iter().collect(),
+            &CONFIG.get_editor_command(),
+            &get_commit_path(),
+        )?;
 
         if commit_worklog.is_empty() {
             return Ok(WorklogMessage("Abort commit".to_string()));
@@ -255,13 +269,17 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
 
         let pb = ProgressBar::new(worklog_uncommitted.len() as u64);
         pb.set_style(
-            ProgressStyle::with_template("{spinner:.white} {msg:15} [{bar:80.white/gray}] ({pos}/{len})").unwrap()
+            ProgressStyle::with_template(
+                "{spinner:.white} {msg:15} [{bar:80.white/gray}] ({pos}/{len})",
+            )
+            .unwrap(),
         );
 
-        let update = |item: &WorklogRecord| -> Result<(), Box <dyn Error>> {
+        let update = |item: &WorklogRecord| -> Result<(), Box<dyn Error>> {
             pb.set_message(item.ticket.clone());
 
-            update_time_spent(&CONFIG.get_jira_url(), &CONFIG.user, &CONFIG.token, item).map(|_|())?;
+            update_time_spent(&CONFIG.get_jira_url(), &CONFIG.user, &CONFIG.token, item)
+                .map(|_| ())?;
 
             let commit_item = WorklogRecord {
                 committed: true,
@@ -269,18 +287,18 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
             };
 
             update_item(&commit_item)?;
-            
+
             pb.inc(1);
 
             Ok(())
         };
 
-        let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(Cursor::new(commit_worklog.join("\n")));
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(Cursor::new(commit_worklog.join("\n")));
         let to_commit: Vec<WorklogRecord> = rdr.deserialize().collect::<Result<_, _>>()?;
 
-        to_commit
-            .iter()
-            .try_for_each(update)?;
+        to_commit.iter().try_for_each(update)?;
 
         Ok(WorklogMessage("All done".to_string()))
     } else {
@@ -313,21 +331,34 @@ pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
     ";
 
     println!("{color_bright_magenta}{}", header);
-    
-    println!("Jiralog home: 
-    {}", get_config_dir_path().display());
+
+    println!(
+        "Jiralog home: 
+    {}",
+        get_config_dir_path().display()
+    );
     println!();
 
-    println!("Configuration: 
-    {}", get_config_path().display());
+    println!(
+        "Configuration: 
+    {}",
+        get_config_path().display()
+    );
     println!();
-    
-    println!("Worklog: 
-    {}", get_worklog_path().display());
+
+    println!(
+        "Worklog: 
+    {}",
+        get_worklog_path().display()
+    );
 
     println!();
 
-    println!("Total items {}, uncommitted items {}", items.len(), uncommitted_items.len());
+    println!(
+        "Total items {}, uncommitted items {}",
+        items.len(),
+        uncommitted_items.len()
+    );
 
     println!("{color_reset}");
 
@@ -336,7 +367,7 @@ pub fn print_info() -> Result<WorklogMessage, Box<dyn Error>> {
 
 pub fn purge() -> Result<usize, Box<dyn Error>> {
     let worklog = read_worklog()?;
-    
+
     let uncommitted = read_worklog_uncommitted()?;
     let uncommitted_length = uncommitted.len();
 
@@ -351,7 +382,7 @@ fn empty_ok() -> Result<WorklogMessage, Box<dyn Error>> {
 
 fn get_config_dir_path() -> PathBuf {
     let home_dir = dirs::home_dir().expect("Could not locate home directory");
-    
+
     let mut jiralog_dir = PathBuf::from(&home_dir);
     jiralog_dir.push(".jiralog");
 
@@ -362,7 +393,7 @@ fn get_config_path() -> PathBuf {
     let jiralog_dir = get_config_dir_path();
 
     let mut config_path = PathBuf::from(&jiralog_dir);
-    config_path.push("jiralog.properties"); 
+    config_path.push("jiralog.properties");
 
     config_path
 }
@@ -370,39 +401,38 @@ fn get_config_path() -> PathBuf {
 fn get_worklog_path() -> PathBuf {
     let mut config_dir = get_config_dir_path();
     config_dir.push(WORKLOG_FILE);
-    
+
     config_dir
 }
 
 fn get_commit_path() -> PathBuf {
     let mut config_dir = get_config_dir_path();
     config_dir.push(COMMIT_FILE);
-    
+
     config_dir
 }
 
 fn read_config() -> Result<Configuration, Box<dyn Error>> {
     let config = File::open(get_config_path())?;
     let config_map = read(BufReader::new(config))?;
-    
+
     let token = config_map.get("token").expect("No token found");
     let jira_url = config_map.get("jira_url");
     let jira_cloud_instance = config_map.get("jira_cloud_instance");
     let user = config_map.get("user").expect("User not configured");
     let editor = config_map.get("editor");
 
-    Ok(
-        Configuration {
-            token: token.to_string(), 
-            jira_url: jira_url.cloned(), 
-            jira_cloud_instance: jira_cloud_instance.cloned(), 
-            user: user.to_string(),
-            editor: editor.cloned(),
-        }
-    )
+    Ok(Configuration {
+        token: token.to_string(),
+        jira_url: jira_url.cloned(),
+        jira_cloud_instance: jira_cloud_instance.cloned(),
+        user: user.to_string(),
+        editor: editor.cloned(),
+    })
 }
 
 pub struct BeginWorklog {
     pub previous: Option<WorklogRecord>,
-    pub current: WorklogRecord
+    pub current: WorklogRecord,
 }
+

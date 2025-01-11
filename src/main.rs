@@ -79,10 +79,10 @@ fn main() {
     match cli.command {
         Some(Commands::Add { ticket, time_spent, description , started_date}) => {
             run(|| worklog::add(
-            ticket.clone(), 
-                time_spent, 
-                description.unwrap_or("".to_string()),
-                started_date
+            &ticket, 
+                &time_spent, 
+                &description.unwrap_or("".to_string()),
+                             &started_date
                     .map(|v| model::get_started_date(&v))
                     .unwrap_or_else(|| Ok(Local::now().fixed_offset()))?
             ), |added_item| format!(
@@ -157,8 +157,8 @@ fn main() {
 
             run(
                 || worklog::begin(
-                    ticket.to_string(), 
-                    description.as_deref().unwrap_or("").to_string()
+                    &ticket, 
+                    &description.unwrap_or("".to_string())
                 ),
                 begin_worklog_output
             );
