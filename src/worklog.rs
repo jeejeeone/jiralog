@@ -40,7 +40,7 @@ pub fn add(
     description: &String,
     started_date: &DateTime<FixedOffset>,
 ) -> Result<WorklogRecord, Box<dyn Error>> {
-    validate_jira_time_spent(&time_spent)?;
+    validate_jira_time_spent(time_spent)?;
 
     let mut file = OpenOptions::new()
         .create(true)
@@ -111,21 +111,21 @@ pub fn begin(ticket: &String, description: &String) -> Result<BeginWorklog, Box<
 }
 
 pub fn print_current_ticket(format: &Option<String>) -> Result<WorklogMessage, Box<dyn Error>> {
-    if let Some(value) = current_ticket()? {
-        let print_format = format
-            .clone()
-            .unwrap_or("[%ti]: time spent=%ts".to_string());
+    match current_ticket()? {
+        Some(value) => {
+            let print_format = format
+                .clone()
+                .unwrap_or("[%ti]: time spent=%ts".to_string());
 
-        let msg = print_format
-            .replace("%ti", &value.ticket)
-            .replace("%d", &value.description)
-            .replace("%ts", &get_current_duration(&value));
+            let msg = print_format
+                .replace("%ti", &value.ticket)
+                .replace("%d", &value.description)
+                .replace("%ts", &get_current_duration(&value));
 
-        Ok(WorklogMessage(msg))
-    } else if format.is_none() {
-        Ok(WorklogMessage("No current ticket".to_string()))
-    } else {
-        empty_ok()
+            Ok(WorklogMessage(msg))
+        }
+        None if format.is_none() => Ok(WorklogMessage("No current ticket".to_string())),
+        None => empty_ok(),
     }
 }
 
