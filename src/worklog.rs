@@ -279,6 +279,7 @@ pub fn commit() -> Result<WorklogMessage, Box<dyn Error>> {
             pb.set_message(item.ticket.clone());
 
             update_time_spent(&CONFIG.get_jira_url(), &CONFIG.user, &CONFIG.token, item)
+                .map_err(|err| format!("{} failed: {}", item.id, err))
                 .map(|_| ())?;
 
             let commit_item = WorklogRecord {
@@ -435,4 +436,3 @@ pub struct BeginWorklog {
     pub previous: Option<WorklogRecord>,
     pub current: WorklogRecord,
 }
-
